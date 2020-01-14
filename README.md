@@ -1,3 +1,5 @@
+<img src="https://humanemulator.info/images/logo.png" alt="[logo]" width="48"/> Board event based on XWeb Human Emulator
+
 ## BoardEvents
 The Board Event program works with three onlain boards, downloads new ads in the specified topics, and notifies by e-mail or makes a call back.
 All this is done in a multi-thread. App using RT versions of [The Human Emulator] based on IE are launched. in the settings, you can specify whether to show the Human Emulator itself.
