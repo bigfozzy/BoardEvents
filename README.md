@@ -6,6 +6,12 @@ All this is done in a multi-thread. App using RT versions of [The Human Emulator
 
 The project is based on the XHE library.dll in C#. [Library sources on github].
 
+#### Development
+
+1. [Visual Studio 2017] & [.NET Framework 4.7.2 Developer Pack] are required.
+2. It is recommended to share your idea on the Issue Board before you start to work,
+especially for feature development.
+
 [The Human Emulator]: http://webemulator.com/
 [Library sources on github]: https://github.com/bigfozzy/Templates-CSHARP
 
@@ -20,5 +26,11 @@ The project is based on the XHE library.dll in C#. [Library sources on github].
 
 Проект работает на основе библиотеки XHE.dll на C#. [Исходники библиотеки на github]
 
+1. [Visual Studio 2017] & [.NET Framework 4.7.2 Developer Pack] требуется.
+2. Рекомендуется поделиться своей идеей на доске вопросов, прежде чем приступить к работе,
+особенно при разработке функций.
+
 [Human Emulator на основе IE]: https://humanemulator.info
 [Исходники библиотеки на github]: https://github.com/bigfozzy/Templates-CSHARP
+[Visual Studio 2017]:   https://www.visualstudio.com/downloads/
+[.NET Framework 4.7.2 Developer Pack]: https://dotnet.microsoft.com/download/dotnet-framework/net472
