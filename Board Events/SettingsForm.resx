@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="label6.Text" xml:space="preserve">
+    <value>Введите адрес вашей электронной почты на которую программа будет присылать уведомление о всех новых вариантах. Уведомления будут присылаться в случае если это разрешено на этой странице настроек и разрешено в задаче по поиску вариантов (это настройки по умолчанию). Почта с которой будут отправлятся уведомления может быть настроена на вкладке расширенных настроек. </value>
+  </data>
+  <data name="label7.Text" xml:space="preserve">
+    <value>При появлении новых вариантов (предложений которые по появились на доске объявлений после создания задачи ) на них будет заказан обратный звонок. Это будет просиходить если это не запрещено на текущей странице и в свойствах задачи по поиску новых вариантов.</value>
+  </data>
+  <data name="label2.Text" xml:space="preserve">
+    <value>Если вы не знаете адрес страницы или у вас нет возможности разместить код плагина на ваших страницах, то вы можете :   Написать нам и мы зарегистрируемся за вас на CallbackKlicker и вышлем вам адрес вашей страницы или выслать нам код плагина для обратного звонка, мы разместим его на наших страницах. Наш E-Mail : part@humanemulator.info </value>
+  </data>
+  <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  <data name="btnOk.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAO
+        wwAADsMBx2+oZAAAAqdJREFUOE+t0ltIk3EcxvGB4KRzmJmNkFCyA9VF0EmkhEgqiMwiKzTzVEYmoZJZ
+        iB0oMxArQqW0zNPmRpradJtuus05T4OWE8dWs7SZCApeeCPybY5iC+omeuCF9+b3eX7///sK/nsir4nx
+        iSjhVW0DbSoN7xXtNDS3IpY18KZGwqPiUnyOVBCZ+JKfI7/H92Apgk15NMtVDA8Pux+z2UxfXx9arZby
+        19WsOJyPMLzwz0B2iYHMxyo+WqxMTExgs9mwWq1YLBb3e5tSzZrzVQh3P/IAkXlqfM8o0fVb+PzVic0x
+        hsX6icEPFgy9JuqbVPin6Egt0mHo6XMB1S6gwAMIzyrwi6jAav/Kr8zPzzM7O8vk5CRdeiMhFysJin2L
+        3mAkIG4R8NrAL07FskPVrlYHCwsLjI+P43A4GBkZwel00qkzsiWnh3UnpchVnQQm1iHc4wUsiVez8qgY
+        87CNubk57Ha7+9yLlzc2NkZHV7cLMOJ/XEpuVT9ByRKEe72ApQlq/KNl9JuGmJmZYXp6mqmpKXf76Ogo
+        SrWWbblG1p6QkPNSQ2haDcL9Xl9heZJrrdhGJE1qOg2DaLoHaNf2otAYkLfrqBA3sT1/gKAYGbfrTBzI
+        lyPc5w0kaxHFyxEltLIhSUFwqoqNVzoIzegiLEvPVlf7zrsm1sdIyZOaOVSgxO9AkQdYdUlHcIrSPVhW
+        XsW9Z7UUFj/nRfkrbt95QFh6I+EPewmMqSezuJ2AqCccji32AKsv6wm9qiYkXcOtgkoEx1ook3Xy3fmN
+        FrmCHa72s5V2RKdlniHviFzNYdl6ttzo4fr9UvzTe2kzjbr/h1qJlF2FQ8RLviA61/hnYDEh5+oJjJaQ
+        dfMOeU9rkLxtobpWTGpaButPSdl84R1RqVV/B/4tAsEPa1HlhnQabvcAAAAASUVORK5CYII=
+</value>
+  </data>
+  <data name="btnCancel.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAO
+        wwAADsMBx2+oZAAAAgpJREFUOE+1kt1L01EYxwdFYKabbcy9KHtx0y3ntKjVmlsYc8LGtrZFq0VdRFFu
+        id6ENwbVVX9EV16lroYNI6GgIqtrg0bECOrCEAITGm1mn85svdhPu6rP1flxns/3ec45P9l/Ydbno7Zc
+        x91Mhhmnc8O9NZ6HQryNuVm5luSp3S4pfGFTQ6qdd045M20madDLLivcSMP1JAuBTmZHRn4WPTMJ+VwP
+        xAwU3Spyfr804EE0SmUsDlePwOUQcwbNWtETsx7SB+CYheWgjmmtSir/4JVHTHFFBFzqp3LGxSPlDhjq
+        hZO7WE0Yedxav7lc5aGjE8ZCMNIHGQ9cdMPpLjhupeBScicY/HtAlTeHxBRDQj67V8hOONHBYkBP1rTB
+        xf1JvrubhYiQLrhqsg2Omln0qrnpcGwecG9wkDmrjpW0F87vg1OO73LCDJFWCOv44N3JlKVNGpIfHaW4
+        3wDDB0VXIabskGznS9wI0RZWg1oqATWVfhXLXjk5bZM05PUejbhp0VE8VbXrx5CeXOM2ij1yvgbVlP1K
+        Sn0KSr5Glnq3M/77cabNRsoxIcbFFNFW3vubyTUr1gqyAwMUnQ2UDzfxydvAkqee+7qtTA4P/wqYikQo
+        +TV8DmuZ361g0mRcN2JOPF3BVkfBWUdeuYVb4bD0CLc7LGRb1EykUtJNwUQiwbj4U2uf/wqZ7BssjywM
+        Qf0cRQAAAABJRU5ErkJggg==
+</value>
+  </data>
+</root>

@@ -1,0 +1,664 @@
+<source>
+<name>Мои Скрипты</name>
+<icon>14</icon>
+<folder>My Scripts</folder>
+<url>http://humanemulator.info</url>
+<expand>false</expand>
+</source>
+
+<source>// folder Test Samples
+<name>Тестовые примеры PHP</name>
+<icon>14</icon>
+<folder>Test Samples</folder>
+<url>http://humanemulator.info</url>
+<expand>false</expand>
+</source>
+
+<source>// folder Test Samples C#
+<name>Тестовые примеры C#</name>
+<icon>14</icon>
+<folder>Test Samples CSHARP</folder>
+<url>http://humanemulator.info</url>
+<expand>false</expand>
+</source>
+
+<source>// folder Test Samples JS
+<name>Тестовые примеры JS</name>
+<icon>14</icon>
+<folder>Test Samples JS</folder>
+<url>http://humanemulator.info</url>
+<expand>false</expand>
+</source>
+
+<source>// folder Scripts Pack
+<name>Scripts Pack</name>
+<icon>14</icon>
+<url>http://humanemulator.info</url>
+<expand>false</expand>
+
+
+<source>
+<name>x-scripts.com</name>
+<icon>36</icon>
+<file>url.url</file>
+<url>http://www.x-scripts.com/</url>
+<expand>false</expand>
+</source>
+
+<source>
+<name>работают в Demo версии</name>
+<icon>68</icon>
+<url>http://www.x-scripts.com/scripts/demo_list.php</url>
+<expand>false</expand>
+
+<source>
+<name>Все</name>
+<icon>68</icon>
+<file>url.url</file>
+<url>http://www.x-scripts.com/scripts/demo_list.php</url>
+<expand>false</expand>
+</source>
+
+<source>
+<name>Проверка доменов</name>
+<icon>68</icon>
+<file>url.url</file>
+<url>http://www.x-scripts.com/scripts/check_domens.php</url>
+<expand>false</expand>
+</source>
+
+<source>
+<name>Размножеватель Gmail</name>
+<icon>68</icon>
+<file>url.url</file>
+<url>http://www.x-scripts.com/scripts/dot_gmail.php</url>
+<expand>false</expand>
+</source>
+
+<source>
+<name>Подтверждение регистрации</name>
+<icon>68</icon>
+<file>url.url</file>
+<url>http://www.x-scripts.com/scripts/reg_confirm.php</url>
+<expand>false</expand>
+</source>
+
+<source>
+<name>Получение котировок</name>
+<icon>68</icon>
+<file>url.url</file>
+<url>http://www.x-scripts.com/scripts/get_quotes.php</url>
+<expand>false</expand>
+</source>
+
+<source>
+<name>Получение параметров сайта</name>
+<icon>68</icon>
+<file>url.url</file>
+<url>http://www.x-scripts.com/scripts/sitespy.php</url>
+<expand>false</expand>
+</source>
+
+<source>
+<name>Создание карты сайта</name>
+<icon>68</icon>
+<file>url.url</file>
+<url>http://www.x-scripts.com/scripts/create_sitemap.php</url>
+<expand>false</expand>
+</source>
+
+<source>
+<name>Проверка плохих ссылок</name>
+<icon>68</icon>
+<file>url.url</file>
+<url>http://www.x-scripts.com/scripts/bad_links.php</url>
+<expand>false</expand>
+</source>
+
+
+</source>
+
+<source>
+<name>примеры решаемых Задач</name>
+<icon>68</icon>
+<file>url.url</file>
+<url>http://www.x-scripts.com/scripts.php</url>
+<expand>false</expand>
+</source>
+
+
+</source>
+
+<source>// folder Scripts Pack
+<name>X-Scripts.com</name>
+<icon>68</icon>
+<url>http://humanemulator.info</url>
+<expand>false</expand>
+
+<source>
+<name>Главная</name>
+<icon>63</icon>
+<file>url.url</file>
+<url>http://www.x-scripts.com/</url>
+<expand>false</expand>
+</source>
+
+
+<source>
+<name>Школа</name>
+<icon>63</icon>
+<file>url.url</file>
+<url>http://www.x-scripts.com/school.php</url>
+<expand>false</expand>
+</source>
+
+<source>
+<name>Видео</name>
+<icon>63</icon>
+<file>url.url</file>
+<url>http://www.x-scripts.com/video.php</url>
+<expand>false</expand>
+</source>
+
+<source>
+<name>Скрипты</name>
+<icon>63</icon>
+<file>url.url</file>
+<url>http://www.x-scripts.com/scripts.php</url>
+<expand>false</expand>
+</source>
+
+<source>
+<name>Статьи</name>
+<icon>63</icon>
+<file>url.url</file>
+<url>http://www.x-scripts.com/articles.php</url>
+<expand>false</expand>
+</source>
+
+<source>
+<name>Программы</name>
+<icon>63</icon>
+<file>url.url</file>
+<url>http://www.x-scripts.com/soft.php</url>
+<expand>false</expand>
+</source>
+
+</source>
+
+
+<source>// folder Usefull
+<name>Useful Links</name>
+<icon>68</icon>
+<folder>Полезное</folder>
+<url>http://humanemulator.info</url>
+<expand>false</expand>
+
+<source>// forum
+<name>Форум</name>
+<file>url.url</file>
+<icon>36</icon>
+<url>http://forum.humanemulator.net</url>
+<expand>false</expand>
+</source>
+
+<source>// news
+<name>Новости</name>
+<file>url.url</file>
+<icon>36</icon>
+<url>http://humanemulator.blogspot.com</url>
+<expand>false</expand>
+</source>
+
+<source>// official site
+<name>Оффициальный сайт</name>
+<file>url.url</file>
+<icon>36</icon>
+<url>http://humanemulator.info</url>
+<expand>false</expand>
+</source>
+
+<source>// support site
+<name>Сайт справки</name>
+<file>url.url</file>
+<icon>36</icon>
+<url>http://humanemulator.net</url>
+<expand>false</expand>
+</source>
+
+
+<source>// user panel
+<name>Кабинет пользователя</name>
+<file>url.url</file>
+<icon>53</icon>
+<url>humanemulator.info/upanel</url>
+<expand>false</expand>
+</source>
+
+<source>
+<name>Школа обучения</name>
+<icon>36</icon>
+<file>url.url</file>
+<url>http://www.x-scripts.com/school.php</url>
+<expand>false</expand>
+</source>
+
+<source>// affiliate programm
+<name>Панрртнерская программа</name>
+<file>url.url</file>
+<icon>63</icon>
+<url>http://humanemulator.info/partnerka/affiliates/login.php#login</url>
+<expand>false</expand>
+</source>
+
+<source>// list of last changes
+<name>Список последних изменений</name>
+<file>url.url</file>
+<icon>50</icon>
+<url>http://humanemulator.info/changelog.txt</url>
+<expand>false</expand>
+</source>
+
+</source>
+
+<source>// folder Useful Goods
+<name>Полезные товары</name>
+<icon>105</icon>
+<folder>Usefull</folder>
+<url>http://humanemulator.info</url>
+<expand>false</expand>
+
+<source>// order script
+<name>Заказать скрипт</name>
+<file>url.url</file>
+<icon>6</icon>
+<url>http://x-scripts.com</url>
+<expand>false</expand>
+</source>
+
+<source>// buy proxy
+<name>Купить прокси</name>
+<file>url.url</file>
+<icon>6</icon>
+<url>http://humanemulator.info/partnership/proxy.php</url>
+<expand>false</expand>
+</source>
+
+<source>// buy vpn
+<name>Купить VPN</name>
+<file>url.url</file>
+<icon>6</icon>
+<url>http://humanemulator.info/partnership/vpn.php</url>
+<expand>false</expand>
+</source>
+
+
+<source>// buy accounts
+<name>Купить аккаунты</name>
+<file>url.url</file>
+<icon>6</icon>
+<url>http://humanemulator.info/partnership/accounts.php</url>
+<expand>false</expand>
+</source>
+
+
+<source>// folder Captcha Services
+<name>Сервисы капч</name>
+<icon>14</icon>
+<folder>Captcha Services</folder>
+<url>http://humanemulator.info/partnership/</url>
+<expand>true</expand>
+
+<source>// antigate
+<name>Antigate</name>
+<file>url.url</file>
+<icon>65</icon>
+<url>http://antigate.com/panel.php</url>
+<expand>false</expand>
+</source>
+
+<source>// RuCaptcha
+<name>RuCaptcha</name>
+<file>url.url</file>
+<icon>65</icon>
+<url>http://rucaptcha.com/?from=357183</url>
+<expand>false</expand>
+</source>
+
+<source>// Captcha24
+<name>Captcha24</name>
+<file>url.url</file>
+<icon>65</icon>
+<url>http://captcha24.com</url>
+<expand>false</expand>
+</source>
+
+<source>// RipCaptcha
+<name>RipCaptcha</name>
+<file>url.url</file>
+<icon>65</icon>
+<url>http://ripcaptcha.com</url>
+<expand>false</expand>
+</source>
+
+<source>// bypasscaptcha
+<name>BypassCaptcha</name>
+<file>url.url</file>
+<icon>65</icon>
+<url>http://bypasscaptcha.com</url>
+<expand>false</expand>
+</source>
+
+<source>// antigate
+<name>CaptchaBot</name>
+<file>url.url</file>
+<icon>65</icon>
+<url>http://captchabot.com/ru/register.html?ref=033597c126ba4e4468bea0d5a83b4937</url>
+<expand>false</expand>
+</source>
+
+</source>
+
+<source>// folder Domains and Hosting
+<name>Домены и хостинг</name>
+<icon>14</icon>
+<folder>Domains and Hosting</folder>
+<url>http://humanemulator.info/partnership/</url>
+<expand>true</expand>
+
+<source>// Reggi.ru
+<name>Reggi.ru</name>
+<file>url.url</file>
+<icon>61</icon>
+<url>http://www.reggi.ru?pid=334339</url>
+<expand>false</expand>
+</source>
+</source>
+
+<source>// folder Domains and Hosting
+<name>Покупка статей</name>
+<icon>14</icon>
+<folder>Buy Articles</folder>
+<url>http://humanemulator.info/partnership/</url>
+<expand>true</expand>
+
+<source>// Text.ru
+<name>Text.ru</name>
+<file>url.url</file>
+<icon>61</icon>
+<url>http://text.ru/humanemulator</url>
+<expand>false</expand>
+</source>
+</source>
+
+
+
+
+</source>
+
+<source>// folder Useful Services
+<name>Полезные сервисы</name>
+<icon>69</icon>
+<folder>Usefull</folder>
+<url>http://humanemulator.info</url>
+<expand>false</expand>
+
+<source>// cyscape.com
+<name>cyscape.com</name>
+<file>url.url</file>
+<icon>62</icon>
+<url>http://www.cyscape.com/showbrow.asp</url>
+<expand>false</expand>
+</source>
+
+<source>// whoer.net
+<name>whoer.net</name>
+<file>url.url</file>
+<icon>62</icon>
+<url>http://whoer.net/</url>
+<expand>false</expand>
+</source>
+
+</source>
+
+<source>// folder Help
+<name>Help</name>
+<icon>78</icon>
+<folder>Help</folder>
+<url>http://humanemulator.net</url>
+<expand>false</expand>
+
+<source>// general
+<name>General</name>
+<file>url.url</file>
+<icon>79</icon>
+<url>http://www.humanemulator.net/</url>
+<expand>false</expand>
+</source>
+
+<source>// articles
+<name>Articles</name>
+<file>url.url</file>
+<icon>79</icon>
+<url>http://humanemulator.net/Statii/index.php</url>
+<expand>false</expand>
+</source>
+
+<source>// interface
+<name>Interface</name>
+<file>url.url</file>
+<icon>79</icon>
+<url>http://humanemulator.net/interface.php</url>
+<expand>false</expand>
+</source>
+
+<source>// objects
+<name>Objects</name>
+<file>url.url</file>
+<icon>78</icon>
+<url>http://humanemulator.net/objects.php</url>
+<expand>true</expand>
+
+<source>// DOM
+<name>DOM</name>
+<file>url.url</file>
+<icon>79</icon>
+<url>http://humanemulator.net/objects/DOM.php</url>
+<expand>false</expand>
+</source>
+
+<source>// System
+<name>System</name>
+<file>url.url</file>
+<icon>79</icon>
+<url>http://humanemulator.net/objects/System.php</url>
+<expand>false</expand>
+</source>
+
+<source>// Web
+<name>Web</name>
+<file>url.url</file>
+<icon>79</icon>
+<url>http://humanemulator.net/objects/Web.php</url>
+<expand>false</expand>
+</source>
+
+<source>// Window
+<name>Window</name>
+<file>url.url</file>
+<icon>79</icon>
+<url>http://humanemulator.net/objects/Window.php</url>
+<expand>false</expand>
+</source>
+
+</source>
+
+
+</source>
+
+<source>// Write a Review
+<name>Write a Review</name>
+<icon>77</icon>
+<folder>Usefull</folder>
+<url>http://humanemulator.info</url>
+<expand>false</expand>
+
+<source>// searchengines.guru
+<name>searchengines.guru</name>
+<file>url.url</file>
+<icon>7</icon>
+<url>http://searchengines.guru/showthread.php?p=13265877#post13265877</url>
+<expand>false</expand>
+</source>
+
+<source>// maultalk.com
+<name>maultalk.com</name>
+<file>url.url</file>
+<icon>7</icon>
+<url>http://www.maultalk.com/topic175407.html</url>
+<expand>false</expand>
+</source>
+
+<source>// armadaboard.com
+<name>armadaboard.com</name>
+<file>url.url</file>
+<icon>7</icon>
+<url>http://www.armadaboard.com/topic51630.html</url>
+<expand>false</expand>
+</source>
+
+<source>// umaxforum.com
+<name>umaxforum.com</name>
+<file>url.url</file>
+<icon>7</icon>
+<url>http://www.umaxforum.com/showthread.php?t=34781</url>
+<expand>false</expand>
+</source>
+
+<source>// webmasters.ru
+<name>webmasters.ru</name>
+<file>url.url</file>
+<icon>7</icon>
+<url>http://webmasters.ru/forum/f91/human-emulator-avtomatizaciya-biznes-i-processov-59541/#post618436</url>
+<expand>false</expand>
+</source>
+
+<source>// forum-seo.net
+<name>forum-seo.net</name>
+<file>url.url</file>
+<icon>7</icon>
+<url>http://forum-seo.net/showthread.php?p=49665#post49665</url>
+<expand>false</expand>
+</source>
+
+<source>// domenforum.net
+<name>domenforum.net</name>
+<file>url.url</file>
+<icon>7</icon>
+<url>http://domenforum.net/showthread.php?t=99370&</url>
+<expand>false</expand>
+</source>
+
+<source>// forum.glavmed.com
+<name>forum.glavmed.com</name>
+<file>url.url</file>
+<icon>7</icon>
+<url>http://forum.glavmed.com/showthread.php?t=5907</url>
+<expand>false</expand>
+</source>
+
+<source>// forum.wm-help.net
+<name>forum.wm-help.net</name>
+<file>url.url</file>
+<icon>7</icon>
+<url>http://forum.wm-help.net/topic6871.html</url>
+<expand>false</expand>
+</source>
+
+<source>// mastertalk.ru
+<name>mastertalk.ru</name>
+<file>url.url</file>
+<icon>7</icon>
+<url>http://mastertalk.ru/discussion/147648/programma-avtomatizacii-brauzera/p1</url>
+<expand>false</expand>
+</source>
+
+<source>// master-x.com
+<name>master-x.com</name>
+<file>url.url</file>
+<icon>7</icon>
+<url>https://www.master-x.com/forum/topics/133260/</url>
+<expand>false</expand>
+</source>
+
+</source>
+
+<source>// folder Help
+<name>We in Social Networks</name>
+<icon>76</icon>
+<folder>Help</folder>
+<url>http://humanemulator.net</url>
+<expand>false</expand>
+
+<source>// human emulator
+<name>vk.com</name>
+<file>url.url</file>
+<icon>9</icon>
+<url>http://vk.com/humanemulator</url>
+<expand>false</expand>
+</source>
+
+<source>// human emulator
+<name>facebook.com</name>
+<file>url.url</file>
+<icon>9</icon>
+<url>https://www.facebook.com/groups/209573842429501/</url>
+<expand>false</expand>
+</source>
+
+<source>// human emulator
+<name>twitter.com</name>
+<file>url.url</file>
+<icon>9</icon>
+<url>http://twitter.com/humanemulator</url>
+<expand>false</expand>
+</source>
+
+
+<source>// folder X-Scripts
+<name>X-Scripts</name>
+<icon>76</icon>
+<folder>Help</folder>
+<url>http://humanemulator.net</url>
+<expand>false</expand>
+
+<source>// x-scripts
+<name>x-scripts</name>
+<file>url.url</file>
+<icon>9</icon>
+<url>http://vk.com/xscripts</url>
+<expand>false</expand>
+</source>
+
+<source>// xhemulator.livejournal.com
+<name>xhemulator.livejournal.com</name>
+<file>url.url</file>
+<icon>9</icon>
+<url>http://xhemulator.livejournal.com</url>
+<expand>false</expand>
+</source>
+
+</source>
+
+</source>
+
+<source>// file quick start.xml
+<name>Quick Start</name>
+<file>quick start.xml</file>
+<icon>4</icon>
+<url>quick start.xml</url>
+<expand>false</expand>
+</source>
+
+
+// this file is a represent a Quick Start Tree Tab visual settings

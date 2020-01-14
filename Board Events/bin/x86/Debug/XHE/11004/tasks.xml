@@ -1,0 +1,24 @@
+<source>
+<name>Register</name>
+
+  <source>
+  <name>GMail</name>
+  <script>Tasks\Register\gmail.php</script>
+  </source>
+
+</source>
+
+<source>
+<name>Submit To</name>
+
+  <source>
+  <name>SE</name>
+  <script>Tasks\Submit To\SE.php</script>
+  </source>
+
+  <source>
+  <name>Xanga</name>
+  <script>Tasks\Submit To\Xanga.php</script>
+  </source>
+
+</source>
