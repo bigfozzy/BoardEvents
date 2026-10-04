@@ -1,4 +1,4 @@
-﻿namespace Board_Events
+namespace Board_Events
 {
     partial class SettingsForm
     {
@@ -336,7 +336,7 @@
             this.tbFromPassword.Name = "tbFromPassword";
             this.tbFromPassword.Size = new System.Drawing.Size(645, 20);
             this.tbFromPassword.TabIndex = 12;
-            this.tbFromPassword.Text = "REMOVED";
+            this.tbFromPassword.Text = "";
             // 
             // tbFromEMail
             // 
@@ -346,7 +346,7 @@
             this.tbFromEMail.Name = "tbFromEMail";
             this.tbFromEMail.Size = new System.Drawing.Size(645, 20);
             this.tbFromEMail.TabIndex = 13;
-            this.tbFromEMail.Text = "REMOVED";
+            this.tbFromEMail.Text = "";
             // 
             // chShowVariantCallRequestInXHE
             // 
