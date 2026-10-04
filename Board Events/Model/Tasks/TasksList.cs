@@ -194,10 +194,9 @@ namespace Board_Events.Model.Tasks
             // получим содержимое в json
             string serialized = JsonConvert.SerializeObject(tasks);
 
-            // запишем в файл
-            TextFileTools.WriteFile(path, serialized, "utf-16");            
-
-            return true;
+            // запишем в файл - реальный результат записи, иначе потеряем данные,
+            // считая что все прошло
+            return TextFileTools.WriteFile(path, serialized, "utf-16");
         }
 
         /// <summary>
@@ -213,8 +212,16 @@ namespace Board_Events.Model.Tasks
                 // получим солдержимое файла
                 string serialized = TextFileTools.ReadFile(path, "utf-16");
 
+                if (string.IsNullOrEmpty(serialized))
+                    return false;
+
                 // получим из файла
                 List<BaseTask> newList = JsonConvert.DeserializeObject<List<BaseTask>>(serialized);
+                if (newList == null)
+                    return false;
+
+                // старый список не сохраняем - иначе повторный импорт задвоит задачи
+                tasks.Clear();
 
                 // добавим в список с учетом классов
                 for (int i = 0; i < newList.Count; i++)

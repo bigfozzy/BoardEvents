@@ -240,19 +240,16 @@ namespace Board_Events.Controller
                     if (File.Exists(bak2))
                         File.Move(bak2, bak3);
 
-                    if (File.Exists(bak2))
-                        File.Delete(bak2);
                     if (File.Exists(bak1))
                         File.Move(bak1, bak2);
 
-                    if (File.Exists(bak1))
-                        File.Delete(bak1);
                     File.Move(Application.StartupPath + "\\tasks.json", bak1);
                 }
             }
             catch (Exception)
             {
-
+                // копия не создалась - сообщаем, но продолжаем
+                ShowMessage.ShowWarningMessage("Не удалось создать резервную копию tasks.json", "Предупреждение");
             }
             return tasks.Serialize("tasks.json");
         }
@@ -261,6 +258,8 @@ namespace Board_Events.Controller
         {
             // начнем обновление списка
             lwTasks.BeginUpdate();
+            // очистим - иначе повторный вызов задвоит строки
+            lwTasks.Items.Clear();
             for (int i=0;i<tasks.GetTaskCount();i++)
             {
                 BaseTask task = tasks.GetTask(i);
@@ -288,6 +287,7 @@ namespace Board_Events.Controller
             // отпишемся от событий модели
             tasks.onTaskUpdated -= TaskUpdated;
             tasks.onTaskAdded -= TaskAdded;
+            tasks.onTaskDeleted -= TaskDeleted;
 
             // прочитаем с диска
             bool res = false;
@@ -300,11 +300,14 @@ namespace Board_Events.Controller
                 ShowMessage.ShowWarningMessage(ex.ToString(), "Ошибка при чтении задач с диска");
                 ShowMessage.ShowInfoMessage("Задачи можно восстановить из последней реезврной копии task.json.bak из папки программы");
             }
+
+            // список задач в памяти уже заменен целиком - перерисуем с нуля
             FillTasksList();
 
             // подпишемся на события модели
             tasks.onTaskUpdated += TaskUpdated;
             tasks.onTaskAdded += TaskAdded;
+            tasks.onTaskDeleted += TaskDeleted;
 
             return res;
         }

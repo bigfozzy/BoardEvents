@@ -69,8 +69,8 @@ namespace Board_Events.Model.Tasks
                         break;
                     if (result_url.Length > 0 && result_url[0] == '/')
                         result_url = "https://auto.ria.com" + result_url;
-                    // не обрабатываем левые урлы
-                    if (result_url.Substring(0, 20).ToLower() != "https://auto.ria.com")
+                    // не обрабатываем левые урлы - и не падаем на слишком коротких
+                    if (!result_url.ToLower().StartsWith("https://auto.ria.com"))
                         continue;
                     int index1 = result_url.IndexOf("\"");
                     if (index1 > 0)

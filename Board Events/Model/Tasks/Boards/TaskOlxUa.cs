@@ -71,6 +71,10 @@ namespace Board_Events.Model.Tasks
                 }
                 if (variant != null)
                     newVariants.Add(variant);
+
+                // страница закончилась - дальше парсить нечего
+                if (index <= 0)
+                    break;
             }
 
 
@@ -106,15 +110,9 @@ namespace Board_Events.Model.Tasks
                 phoneStr = phoneStr.Replace("Показать", "");
                 phoneStr = phoneStr.Replace("\r\n\r\n", "\t");
                 string[] phoneStrArr = phoneStr.Split('\t');
-                phoneStr = "";
-                for (int i = 0; i < 1; i++)
-                {
-                    /*if (phoneStrArr[0] =="0")
-                        phoneStrArr[i] = "+38(" + phoneStrArr[i];
-                    int index = phoneStrArr[i].IndexOf(" ");
-                    phoneStrArr[i]=phoneStrArr[i].Insert(index, ")");*/
-                    phoneStr = phoneStrArr[i] + "\t";
-                }
+
+                // разделителей могло не оказаться - тогда остается исходная строка
+                phoneStr = (phoneStrArr.Length > 0 && phoneStrArr[0] != "") ? phoneStrArr[0] : phoneStr.Trim();
             }
             else
                 phoneStr = "";
@@ -135,11 +133,15 @@ namespace Board_Events.Model.Tasks
                 prefix_0 = "Опубликовано с";
                 index = variantContent.IndexOf(prefix_0);
             }
-            string prefix_begin = ",";
-            string prefix_end = ",";
-            string str = StringTools.GetSubstringByPrefix(variantContent, prefix_begin, prefix_end, ref index);
-            variant.PostedDate = DateTime.Parse(str);
-            
+            if (index != -1)
+            {
+                string prefix_begin = ",";
+                string prefix_end = ",";
+                string str = StringTools.GetSubstringByPrefix(variantContent, prefix_begin, prefix_end, ref index);
+                DateTime postedDate;
+                if (DateTime.TryParse(str, out postedDate))
+                    variant.PostedDate = postedDate;
+            }
 
             return variant.Phone != "";
         }

@@ -224,6 +224,7 @@ namespace Board_Events
             // для сообщений
             TaskCheckThread.tbTaskCheck = null;
             VariantCallThread.TbOutCall = null;
+            VariantCheckThread.tbVariantCheck = null;
 
             // сохраним задачи
             tasksController.SerializeAllTasks();
@@ -232,6 +233,11 @@ namespace Board_Events
 
             // завершим шедулер
             scheduler.Shutdown();
+
+            // закроем CefSharp - иначе остаются его дочерние процессы
+            if (chromeVariant != null)
+                chromeVariant.Dispose();
+            Cef.Shutdown();
         }
 
         #endregion
@@ -471,7 +477,11 @@ namespace Board_Events
             // активируем лог 
             tcLogs.SelectedTab = tabCheck;
             // выполним
-            taskController.AddVariant();
+            if (taskController.AddVariant())
+            {
+                // сохраним задачи - иначе новый вариант потеряется при аварии
+                tasksController.SerializeAllTasks();
+            }
         }
 
         /// <summary>
@@ -791,72 +801,77 @@ namespace Board_Events
         /// </summary>
         static public void Sleep(int milliseconds)
         {
-            for (int i = 0; i < (milliseconds / 1000); i++)
+            int waited = 0;
+            while (waited < milliseconds)
             {
-                Thread.Sleep(1000);
+                Thread.Sleep(200);
+                waited += 200;
                 if (Main.NeedClose)
                     break;
+            }
+        }
+
+        /// <summary>
+        /// сколько ждать запуска XHE перед тем как признать это ошибкой (секунд)
+        /// </summary>
+        const int xheStartTimeout = 30;
+
+        /// <summary>
+        /// запустить эмулятор на порту и закрыть - с ожиданием запуска и таймаутом
+        /// </summary>
+        void StartAndStopXHE(int port)
+        {
+            string path = Application.StartupPath + "\\XHE\\" + port.ToString() + "\\" + port.ToString() + ".exe";
+            XHEApp xhe = new XHEApp(path, port);
+
+            using (XHEScriptMulti script = new XHEScriptMulti("localhost:" + port.ToString()))
+            {
+                // ожидаем запуска - но не бесконечно
+                int waited = 0;
+                while (script.app.get_version(true) == "")
+                {
+                    Thread.Sleep(1000);
+                    waited++;
+
+                    // эмулятор не поднялся - идем дальше, приложение не должно висеть
+                    if (waited >= xheStartTimeout)
+                        return;
+
+                    // пользователь закрывает приложение
+                    if (NeedClose)
+                        return;
+                }
+
+                // закрыть
+                script.Exit();
             }
         }
 
         // запустить и закрыть хуман эумлятор при старте (ввод кода активации)
         void RunAndCloseXHEByStart(bool first)
         {
-            // запустить хуман из заданного пути на заданном порту (по номеру потока)
-            if (first)            
+            // запустить хуман из заданного пути на заданному порту (по номеру потока)
+            if (first)
             {
-                int port = 11000;
-                string path = Application.StartupPath + "\\XHE\\" + port.ToString() + "\\" + port.ToString() + ".exe";
-                XHEApp xhe = new XHEApp(path, port);
-
-                // XHE задача
-                using (XHEScriptMulti script = new XHEScriptMulti("localhost:" + port.ToString()))
-                {
-                    // ожидаем запуска                      
-                    while (script.app.get_version(true) == "")
-                        Thread.Sleep(1000);
-
-                    // закрыть
-                    script.Exit();
-                }
+                StartAndStopXHE(11000);
                 return;
             }
 
+            // порты проверки задач
             for (int i = 0; i < 10; i++)
             {
-                // запустить хуман из заданного пути на заданном порту (по номеру потока)
-                int portCheck = 11000+i;                
-                string pathCheck = Application.StartupPath + "\\XHE\\" + portCheck.ToString() + "\\" + portCheck.ToString() + ".exe";
-                XHEApp xheCheck = new XHEApp(pathCheck, portCheck);
-                // XHE задача
-                using (XHEScriptMulti script = new XHEScriptMulti("localhost:" + portCheck.ToString()))
-                {
-                    // ожидаем запуска                
-                    while (script.app.get_version(true) == "")
-                        Thread.Sleep(1000);
-
-                    // закрыть
-                    script.Exit();
-                }
+                StartAndStopXHE(11000 + i * 10);
+                if (NeedClose)
+                    return;
             }
 
+            // порты заказа звонков
             for (int i = 0; i < 2; i++)
             {
-                // запустить хуман из заданного пути на заданном порту (по номеру потока)
-                int portCheck = 12000 + i;
-                string pathCheck = Application.StartupPath + "\\XHE\\" + portCheck.ToString() + "\\" + portCheck.ToString() + ".exe";
-                XHEApp xheCheck = new XHEApp(pathCheck, portCheck);
-                // XHE задача
-                using (XHEScriptMulti script = new XHEScriptMulti("localhost:" + portCheck.ToString()))
-                {
-                    // ожидаем запуска                
-                    while (script.app.get_version(true) == "")
-                        Thread.Sleep(1000);
-
-                    // закрыть
-                    script.Exit();
-                }
-            }            
+                StartAndStopXHE(12000 + i * 10);
+                if (NeedClose)
+                    return;
+            }
         }
 
         #endregion

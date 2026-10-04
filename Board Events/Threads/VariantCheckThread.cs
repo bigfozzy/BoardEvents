@@ -57,7 +57,8 @@ namespace Board_Events.Threads
         /// <param name="task"></param>
         void LogVariantCheck(string message)
         {
-            Log(message + " [ вариант " + variant.Url + " , поток " + threadNum + "]", tbVariantCheck);
+            string url = (variant != null) ? variant.Url : "?";
+            Log(message + " [ вариант " + url + " , поток " + threadNum + "]", tbVariantCheck);
         }
 
         #endregion
@@ -72,6 +73,8 @@ namespace Board_Events.Threads
                 task = context.JobDetail.JobDataMap.Get("Data#1") as BaseTask;
                 // вариант по котрому надо заказать звонок
                 variant = context.JobDetail.JobDataMap.Get("Data#2") as TaskVariant;
+                if (variant == null)
+                    return;
                 // укажем что начали проверку
                 variant.IsCheckNow = true;
 
@@ -89,24 +92,35 @@ namespace Board_Events.Threads
                 {
                     // закажем звонок
                     variant.onVarianCheckProgressLog += OnVariqntCheckLog;
-                    string message = variant.Check(threadNum,task);
-                    variant.onVarianCheckProgressLog -= OnVariqntCheckLog;
+                    try
+                    {
+                        variant.Check(threadNum, task);
+                    }
+                    finally
+                    {
+                        variant.onVarianCheckProgressLog -= OnVariqntCheckLog;
+                    }
 
                     // укажем что закончили проверку
                     variant.IsCheckNow = false;
                     // обновим задачу, свзяанную с вариантом
                     UpdateTask(tbVariantCheck);
-
-                    // укажем что поток стал свободен
-                    FreeThread(threadNum);
                 }
             }
             catch (Exception ex)
             {
-                // укажем что заколнчили проверку
-                variant.IsRequestCallNow = false;
                 // лог
-                LogVariantCheck("ошибка заказа звонка " + ex.ToString());
+                LogVariantCheck("ошибка проверки варианта " + ex.ToString());
+            }
+            finally
+            {
+                // укажем что закончили проверку
+                if (variant != null)
+                    variant.IsCheckNow = false;
+
+                // всегда освобождаем слот потока - иначе он теряется навсегда
+                if (threadNum != -1)
+                    FreeThread(threadNum);
             }
         }
 

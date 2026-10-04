@@ -222,15 +222,17 @@ namespace Board_Events
                 .WithIdentity(taskJobName, "scheduling")
                 .Build();
 
-            // укажем что начали проверку
-            IsCheckNow = true;
-            OnTaskUpdated();
-
-            // создадим тригер
+            // создадим триггер
             ITrigger trigger=null;
             if (isNow)
             {
-                // тригер - запустить сейчас
+                // укажем что начали проверку - сбросит поток TaskCheckThread
+                IsCheckNow = true;
+
+                // сразу обновим интерфейс - дальше событие придет из потока
+                OnTaskUpdated();
+
+                // триггер - запустить сейчас
                 trigger = TriggerBuilder.Create()
                     .WithIdentity("SchedulingTrigger" + Name + shedulerTaskCounter.ToString(), "scheduling")
                     .StartNow()
@@ -250,7 +252,7 @@ namespace Board_Events
                     hoursInterval = 4;
                 else if (TimeCheck == "раз в 5 часов")
                     hoursInterval = 5;
-                else if (TimeCheck == "раз 10 часов")
+                else if (TimeCheck == "раз в 10 часов")
                     hoursInterval = 10;
                 else if (TimeCheck == "раз в 12 часов")
                     hoursInterval = 12;
@@ -299,19 +301,31 @@ namespace Board_Events
             }
 
             // укажем задачу - как данные работы
-            IDictionary<string, object> data = new Dictionary<string, object>();
             job.JobDataMap.Add("Data#1", this);
+
+            // интервал не распознан - задача в шедулер не попадет
+            if (trigger == null)
+            {
+                IsCheckNow = false;
+                taskJobName = "";
+                OnTaskUpdated();
+                return false;
+            }
 
             // запустим задачу
             try
             {
-                if (trigger != null)
-                    scheduler.ScheduleJob(job, trigger);                
+                scheduler.ScheduleJob(job, trigger);
+                return true;
             }
             catch (Exception)
             {
+                // задача не встала в расписание - не оставляем ее в состоянии "идет проверка"
+                taskJobName = "";
+                IsCheckNow = false;
+                OnTaskUpdated();
+                return false;
             }
-            return true;
         }
         /// <summary>
         /// убрать задачу изшедулера
@@ -320,9 +334,24 @@ namespace Board_Events
         /// <returns></returns>
         public bool StopScheduling(IScheduler scheduler)
         {
+            // нечего удалять
+            if (taskJobName == "")
+                return true;
+
+            // сохраним имя задачи - по нему ищем ее в шедулере
+            string jobName = taskJobName;
+
             // укажем что задача остановлена
             taskJobName = "";
-            return scheduler.DeleteJob(new JobKey(taskJobName, "scheduling"));            
+
+            try
+            {
+                return scheduler.DeleteJob(new JobKey(jobName, "scheduling"));
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -470,6 +499,10 @@ namespace Board_Events
                     if (onTaskCheckProgressLog!=null)
                         onTaskCheckProgressLog.Invoke(this, "ошибка при разборе задачи " + Url + "\n" + ex.ToString());
                 }
+
+                // разбор мог упасть до присвоения - вернем пустой список, а не null
+                if (newVariants == null)
+                    newVariants = new List<TaskVariant>();
 
                 // завершим задачу
                 EndCheck("задача завершена, добавлено вариантов :"+ newVariants.Count.ToString(), script, newVariants);

@@ -24,10 +24,6 @@ namespace Board_Events.Model.Tasks
         public static TextBox tbTaskCheck = null;
 
         /// <summary>
-        /// максимальное число потоков
-        /// </summary>
-        static int numThreads = 10;
-        /// <summary>
         /// используемые порты для проверок
         /// </summary>
         static bool[] TaskCheckThreads = new bool[10] { false, false, false, false, false, false, false, false, false, false };
@@ -42,12 +38,11 @@ namespace Board_Events.Model.Tasks
         /// <returns></returns>
         protected int GetFreeThread()
         {
-            // проверим что все настрйока правильная
-            if (Properties.Settings.Default.iMaxCheckThreads > numThreads)
-                Properties.Settings.Default.iMaxCheckThreads = numThreads;
+            // число потоков из настроек - читаем только, писать в настройки из потока нельзя
+            int maxThreads = Properties.Settings.Default.iMaxCheckThreads;
 
             // получим незанятый поток
-            return GetFreeThreadIndex(TaskCheckThreads, Properties.Settings.Default.iMaxCheckThreads);
+            return GetFreeThreadIndex(TaskCheckThreads, maxThreads);
         }
 
         /// <summary>
@@ -82,6 +77,8 @@ namespace Board_Events.Model.Tasks
             {
                 // задачу что надо выполнять
                 task = context.JobDetail.JobDataMap.Get("Data#1") as BaseTask;
+                if (task == null)
+                    return;
                 // укажем что начали проверку
                 task.IsCheckNow = true;
 
@@ -99,8 +96,15 @@ namespace Board_Events.Model.Tasks
                 {
                     // проверим задачу
                     task.onTaskCheckProgressLog += OnTaskCheckProgressLog;
-                    List<TaskVariant> newVariants = task.Check(threadNum);
-                    task.onTaskCheckProgressLog -= OnTaskCheckProgressLog;
+                    List<TaskVariant> newVariants;
+                    try
+                    {
+                        newVariants = task.Check(threadNum);
+                    }
+                    finally
+                    {
+                        task.onTaskCheckProgressLog -= OnTaskCheckProgressLog;
+                    }
 
                     // число вариантов
                     int newVariantsCount = 0;
@@ -108,7 +112,7 @@ namespace Board_Events.Model.Tasks
                         newVariantsCount = newVariants.Count;
 
                     // уведомить по емайл
-                    if (newVariantsCount>0)
+                    if (newVariantsCount > 0)
                     {
                         // если програмам еще работает
                         if (tbTaskCheck != null && !tbTaskCheck.IsDisposed)
@@ -135,21 +139,25 @@ namespace Board_Events.Model.Tasks
                             }
                         }
                     }
-
-                    // укажем что поток стал свободен
-                    FreeThread(threadNum);                    
                 }
-
-                // проверка закончена
-                task.IsCheckNow = false;
-                // обновим задачу 
-                UpdateTask(tbTaskCheck);
             }
             catch (Exception ex)
             {
-                // проверка закончена
-                task.IsCheckNow = false;
                 LogTaskCheck("ошибка при проверке "+ex.ToString());
+            }
+            finally
+            {
+                // проверка закончена
+                if (task != null)
+                {
+                    task.IsCheckNow = false;
+                    // обновим задачу
+                    UpdateTask(tbTaskCheck);
+                }
+
+                // всегда освобождаем слот потока - иначе он теряется навсегда
+                if (threadNum != -1)
+                    FreeThread(threadNum);
             }
         }
 

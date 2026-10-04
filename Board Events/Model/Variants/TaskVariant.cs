@@ -181,7 +181,7 @@ namespace Board_Events.Model.Results
             // сформируем
             string res = "";            
             foreach (string s in GetHeaders())
-                res = res + "<"+div+ " class>" + s + "</"+div+">";
+                res = res + "<" + div + ">" + WebUtility.HtmlEncode(s) + "</" + div + ">";
 
             // для строки таблицы
             if (!asHeader)
@@ -197,15 +197,20 @@ namespace Board_Events.Model.Results
         {
             // сформируем
             string res = "<tr>";
-            foreach (string s in GetContents())
+            string[] contents = GetContents();
+            for (int i = 0; i < contents.Length; i++)
             {
-                string tmp = s;
-                if (s == Url)
-                    tmp = "<a href=" + Url + ">" + Url + "</a>";
-                else if (s == Phone)
-                    tmp = "<a href=\"tel:" + Phone + "\">" + Phone + "</a>";
+                string s = contents[i];
+                string tmp;
+
+                // сравниваем по позиции, а не по значению - иначе описание,
+                // случайно совпавшее с адресом, тоже станет ссылкой
+                if (i == 2)
+                    tmp = "<a href=\"" + WebUtility.HtmlEncode(Url) + "\">" + WebUtility.HtmlEncode(Url) + "</a>";
+                else if (i == 3)
+                    tmp = "<a href=\"tel:" + WebUtility.HtmlEncode(Phone) + "\">" + WebUtility.HtmlEncode(Phone) + "</a>";
                 else
-                    tmp = s;
+                    tmp = WebUtility.HtmlEncode(s);
 
                 res = res + "<td>" + tmp + "</td>";
             }            
@@ -237,7 +242,8 @@ namespace Board_Events.Model.Results
             // сформируем
             string res = "";
             foreach (string s in GetContents())
-                res = res + "\"" + s + "\";";
+                // кавычки внутри значения ломают экспорт - экранируем удвоением
+                res = res + "\"" + s.Replace("\"", "\"\"") + "\";";
 
             // результат
             return res + endLine;
@@ -264,16 +270,18 @@ namespace Board_Events.Model.Results
                 {
                     // переделка контента
                     string tmp = contents[i];
-                    if (tmp == Url)
-                        tmp = "<a href=" + Url + ">" + Url + "</a>";
-                    else if (tmp == Phone)
+                    if (i == 2)
+                        tmp = "<a href=\"" + WebUtility.HtmlEncode(Url) + "\">" + WebUtility.HtmlEncode(Url) + "</a>";
+                    else if (i == 3)
                     {
-                        string phoneUrl = Phone.Replace(" ", "");
-                        phoneUrl = Phone.Replace("-", "");
-                        phoneUrl = Phone.Replace("(", "");
-                        phoneUrl = Phone.Replace(")", "");
-                        tmp = "<a href=\"tel:" + phoneUrl + "\">" + Phone + "</a>";
+                        // убираем все разделители из ссылки, но из показа - оставляем
+                        string phoneUrl = GetNormedPhone();
+                        if (phoneUrl == "")
+                            phoneUrl = Phone;
+                        tmp = "<a href=\"tel:" + WebUtility.HtmlEncode(phoneUrl) + "\">" + WebUtility.HtmlEncode(Phone) + "</a>";
                     }
+                    else
+                        tmp = WebUtility.HtmlEncode(tmp);
 
                     str += "<tr><td>" + headers[i] + "</td><td>" + tmp + "</td></tr>" + endLine;
                 }
@@ -452,19 +460,21 @@ namespace Board_Events.Model.Results
                     phone += Phone[i];
             }
 
+            // в телефоне не оказалось ни одной цифры
+            if (phone.Length == 0)
+                return "";
+
             // нормализуем - начинается с 0 - значит украина
             if (phone[0] == '0')
                 phone = "+38"+ phone;
             // добавим + для россии и украины
-            else if (phone[0] == '7' || phone.Substring(0, 2) == "38")
+            else if (phone[0] == '7' || phone.StartsWith("38"))
                 phone = "+"+ phone;
-            if (phone[0] == '+')
-            {
-                if (phone.Substring(0,2)=="+7" || phone.Substring(0, 3) == "+38")
-                    return phone;
-            }
 
             // если не +7 и +38 - то не звонить
+            if (phone.StartsWith("+7") || phone.StartsWith("+38"))
+                return phone;
+
             return "";
         }
 

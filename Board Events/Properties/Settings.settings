@@ -21,10 +21,10 @@
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="EMailFrom" Type="System.String" Scope="User">
-      <Value Profile="(Default)">REMOVED</Value>
+      <Value Profile="(Default)" />
     </Setting>
     <Setting Name="EmailFromPassword" Type="System.String" Scope="User">
-      <Value Profile="(Default)">REMOVED</Value>
+      <Value Profile="(Default)" />
     </Setting>
     <Setting Name="EMailTo" Type="System.String" Scope="User">
       <Value Profile="(Default)" />

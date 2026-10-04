@@ -55,7 +55,8 @@ namespace Board_Events.Threads
         /// <param name="task"></param>
         void LogVariantRequestCall(string message)
         {
-            Log(message + " [ вариант " + variant.Url + " , поток " + threadNum + "]", TbOutCall);
+            string url = (variant != null) ? variant.Url : "?";
+            Log(message + " [ вариант " + url + " , поток " + threadNum + "]", TbOutCall);
         }
 
         #endregion
@@ -74,6 +75,8 @@ namespace Board_Events.Threads
                 task = context.JobDetail.JobDataMap.Get("Data#1") as BaseTask;
                 // вариант по котрому надо заказать звонок
                 variant = context.JobDetail.JobDataMap.Get("Data#2") as TaskVariant;
+                if (variant == null)
+                    return;
                 if (!variant.IsValidPhone()) // плохой телефон
                     return;
                 // укажем что начали проверку
@@ -93,24 +96,35 @@ namespace Board_Events.Threads
                 {
                     // закажем звонок
                     variant.onVariantRequestCallCheckProgressLog += OnVariqntRequestCallLog;
-                    string message = variant.RequestCall(threadNum);
-                    variant.onVariantRequestCallCheckProgressLog -= OnVariqntRequestCallLog;
+                    try
+                    {
+                        variant.RequestCall(threadNum);
+                    }
+                    finally
+                    {
+                        variant.onVariantRequestCallCheckProgressLog -= OnVariqntRequestCallLog;
+                    }
 
                     // укажем что закончили проверку
                     variant.IsRequestCallNow = false;
                     // обновим задачу, свзяанную с вариантом
                     UpdateTask(TbOutCall);
-
-                    // укажем что поток стал свободен
-                    FreeThread(threadNum);
                 }
             }
             catch (Exception ex)
             {
-                // укажем что заколнчили проверку
-                variant.IsRequestCallNow = false;
                 // лог
                 LogVariantRequestCall("ошибка заказа звонка " + ex.ToString());
+            }
+            finally
+            {
+                // укажем что закончили проверку
+                if (variant != null)
+                    variant.IsRequestCallNow = false;
+
+                // всегда освобождаем слот потока - иначе он теряется навсегда
+                if (threadNum != -1)
+                    FreeThread(threadNum);
             }
         }
 

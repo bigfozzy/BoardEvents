@@ -49,29 +49,33 @@ namespace Board_Events.Threads
         #region сервсиные
 
         /// <summary>
+        /// сколько ждать свободный поток перед отказом (секунд)
+        /// </summary>
+        protected const int waitFreeThreadTimeout = 600;
+
+        /// <summary>
         /// получить номер свободного потока , используя данные своего класса
         /// </summary>
-        /// <returns></returns>
+        /// <returns>-1 если свободного потока не появилось за отведенное время либо приложение закрывается</returns>
         protected int GetFreeThreadIndex(bool[] threads,int max)
         {
             // поправим ошибки - есали они есть
             if (max > threads.Length)
                 max = threads.Length;
+            // некорректное число потоков - ждать бессмысленно
+            if (max <= 0)
+                return -1;
+
+            // счетчик ожидания
+            int waitedSeconds = 0;
 
             // начнем поиск свободного потока
             int threadNum = -1;
             while (threadNum == -1)
             {
-                // пауза
-                Main.Sleep(3000);
-                // надо остановить
-                if (needStop || Main.NeedClose)
-                    return -1;
-
                 // получим незанятый поток
                 lock (thisLock)
                 {
-
                     // получим незанятый поток в пределах максимального числа потоков
                     for (int i = 0; i < max; i++)
                     {
@@ -83,6 +87,22 @@ namespace Board_Events.Threads
                         }
                     }
                 }
+
+                // свободный поток найден
+                if (threadNum != -1)
+                    break;
+
+                // пауза перед следующей попыткой
+                Main.Sleep(3000);
+                waitedSeconds += 3;
+
+                // надо остановить
+                if (needStop || Main.NeedClose)
+                    return -1;
+
+                // не ждем вечно - иначе задача или вариант потеряют слот навсегда
+                if (waitedSeconds >= waitFreeThreadTimeout)
+                    return -1;
             }
 
             // результат

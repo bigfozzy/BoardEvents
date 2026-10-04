@@ -1,0 +1,36 @@
+## Build output
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## NuGet
+packages/
+*.nupkg
+project.lock.json
+project.assets.json
+
+## Visual Studio
+.vs/
+*.pdb
+*.ilk
+*.idb
+
+## Runtime data / logs (never commit)
+Tasks/
+Logs/
+Results/
+Temp/
+*.log
+tasks.json
+tasks.json.bak*
+
+## XHE runtime copies
+Board Events/XHE/
+
+## OS
+Thumbs.db
+.DS_Store
+desktop.ini

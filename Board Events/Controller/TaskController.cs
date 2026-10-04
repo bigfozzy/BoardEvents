@@ -185,6 +185,10 @@ namespace Board_Events.Controller
         /// <returns></returns>
         public bool EditTask(string name,string url,string timeCheck,bool mailNotification,bool callNotification, TasksController tasksController)
         {
+            // нет текущей задачи
+            if (Task == null)
+                return false;
+
             // проверим чтобы урл был уникальный
             BaseTask task = tasksController.GetTaskByUrl(url);
             if (task!=null && task != Task)
@@ -193,18 +197,20 @@ namespace Board_Events.Controller
                 return false;
             }
 
-            // перезапустим шедулер - при изменении параметров задачи
-            if (global::Board_Events.Properties.Settings.Default.bAutoStartScheduler)
-            {
-                if (Task.IsScheduling())
-                {
-                    Task.StopScheduling(scheduler);
-                    Task.StartScheduling(scheduler);
-                }
-            }
+            // было ли задача в расписании
+            bool wasScheduling = Task.IsScheduling();
+
+            // останавливаем старое расписание до смены данных - иначе новый
+            // триггер соберется на старом интервале
+            if (wasScheduling)
+                Task.StopScheduling(scheduler);
 
             // изменим задачу
             Task.SetTaskDatas(url, name, timeCheck, mailNotification, callNotification);
+
+            // перезапустим шедулер с новым интервалом
+            if (wasScheduling || global::Board_Events.Properties.Settings.Default.bAutoStartScheduler)
+                Task.StartScheduling(scheduler);
 
             // сохраним задачи
             tasksController.SerializeAllTasks();
@@ -550,14 +556,19 @@ namespace Board_Events.Controller
             // получим текущий вариант
             TaskVariant variant = GetVariant();
 
-            // сделаем экпорт
-            if (variant != null && Task != null && variant.RequestCallNow(Task, scheduler))
+            // нет варианта или задачи
+            if (variant == null || Task == null)
             {
-                return true;
+                ShowMessage.ShowWarningMessage("Не выбран вариант для заказа звонка", "Предупреждение");
+                return false;
             }
+
+            // сделаем заказ
+            if (variant.RequestCallNow(Task, scheduler))
+                return true;
             else
             {
-                ShowMessage.ShowWarningMessage("Звонок для телефона " + variant.Url + " не был заказан", "Предупреждение");
+                ShowMessage.ShowWarningMessage("Звонок для адреса " + variant.Url + " не был заказан", "Предупреждение");
                 return false;
             }
         }
@@ -567,14 +578,19 @@ namespace Board_Events.Controller
         /// </summary>
         public bool VariantsAllRequestCall()
         {
-            // сделаем экпорт
-            if (Task != null && Task.VariantsAllRequestCallNow(scheduler)>0)
+            // нет задачи
+            if (Task == null)
             {
-                return true;
+                ShowMessage.ShowWarningMessage("Не выбрана задача для заказа звонков", "Предупреждение");
+                return false;
             }
+
+            // сделаем заказ
+            if (Task.VariantsAllRequestCallNow(scheduler) > 0)
+                return true;
             else
             {
-                ShowMessage.ShowWarningMessage("Звонки для телефона для всех вариантов задачи " + Task.Name + " не были заказаны", "Предупреждение");
+                ShowMessage.ShowWarningMessage("Звонки для всех вариантов задачи " + Task.Name + " не были заказаны", "Предупреждение");
                 return false;
             }
         }

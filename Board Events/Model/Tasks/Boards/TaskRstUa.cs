@@ -57,26 +57,30 @@ namespace Board_Events.Model.Tasks
             {
                 // поулчим урлы задач
                 string result_url = StringTools.GetSubstringByPrefix(content, prefix_begin, prefix_end, ref index);
-                if (result_url == null)
-                    break;
-                if (result_url.IndexOf("//") == -1)
-                    result_url = "http://rst.ua" + result_url;
+            if (result_url == null)
+                break;
+            if (result_url.IndexOf("//") == -1)
+                result_url = "http://rst.ua" + result_url;
 
-                // добавим к результатам
-                TaskVariant variant = null;
-                try
-                {
-                    variant = CreateVariant(result_url);
-                }
-                catch (Exception)
-                {
-                }                
-                if (variant != null)
-                    newVariants.Add(variant);
+            // добавим к результатам
+            TaskVariant variant = null;
+            try
+            {
+                variant = CreateVariant(result_url);
             }
+            catch (Exception)
+            {
+            }                
+            if (variant != null)
+                newVariants.Add(variant);
 
-            // результат
-            return newVariants;
+            // страница закончилась - дальше парсить нечего
+            if (index <= 0)
+                break;
+        }
+
+        // результат
+        return newVariants;
         }
 
         /// <summary>
@@ -133,7 +137,10 @@ namespace Board_Events.Model.Tasks
             index2 = 0;
             string prefix_begin2 ="<span class=\"rst-uix-black\">";
             string prefix_end2 = "</span>";
-            variant.PostedDate = DateTime.Parse(StringTools.GetSubstringByPrefix(variantContent, prefix_begin2, prefix_end2, ref index2));
+            string dateStr = StringTools.GetSubstringByPrefix(variantContent, prefix_begin2, prefix_end2, ref index2);
+            DateTime postedDate;
+            if (DateTime.TryParse(dateStr, out postedDate))
+                variant.PostedDate = postedDate;
 
             return variant.Phone != "";
         }
