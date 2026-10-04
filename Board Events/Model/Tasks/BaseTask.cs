@@ -587,8 +587,8 @@ namespace Board_Events
         /// <returns></returns>
         public TaskVariant GetVariant(int index)
         {
-            // не нашли
-            if (index >= Variants.Count)
+            // не нашли - включая отрицательный индекс
+            if (index < 0 || index >= Variants.Count)
                 return null;
 
             // нашли

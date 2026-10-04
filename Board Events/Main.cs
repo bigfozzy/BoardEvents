@@ -626,20 +626,24 @@ namespace Board_Events
             // строку и столбец
             var senderList = (ListView)sender;
             var clickedItem = senderList.HitTest(e.Location).Item;
-            if (clickedItem != null)
+            if (clickedItem == null)
+                return;
+
+            // выделим именно ту строку по которой кликнули - при мульти-выборе
+            // команда может сработать на другом варианте
+            int row = senderList.Items.IndexOf(clickedItem);
+            taskController.SetVariant(row);
+
+            var clickedSubItem = senderList.HitTest(e.Location).SubItem;
+            int column = clickedItem.SubItems.IndexOf(clickedSubItem);
+            switch (column)
             {
-                var clickedSubItem = senderList.HitTest(e.Location).SubItem;
-                int row = senderList.Items.IndexOf(clickedItem);
-                int column = clickedItem.SubItems.IndexOf(clickedSubItem);
-                switch (column)
-                {
-                    case 2:
-                        taskController.OpenVariant();
-                        break;
-                    case 5:
-                        taskController.SetVariantDescription();
-                        break;
-                }
+                case 2:
+                    taskController.OpenVariant();
+                    break;
+                case 5:
+                    taskController.SetVariantDescription();
+                    break;
             }
         }
 
@@ -689,7 +693,6 @@ namespace Board_Events
                 tbTaskUrl.Text = task.Url;
                 llbTaskAddress.Text = task.Url;
                 cmTimeCheck.Text = task.TimeCheck;
-                lblTotalCheckCount.Text = task.CheckCount.ToString();
                 lblCreateDate.Text = "Дата создания : " + task.CreateDate.ToString();
                 if (task.CheckCount != 0)
                     lblLastCheckDate.Text = "Дата последней проверки : " + task.LastCheckDate.ToString();

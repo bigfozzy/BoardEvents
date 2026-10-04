@@ -96,24 +96,34 @@ namespace Board_Events.Controller
         /// <returns></returns>
         public bool SelectTask(int index=-1)
         {
-            // получим выбор
-            int selIndex = GetSelectedTaskIndex();
+            // задан индекс - выделим его
+            // Событие SelectedIndexChanged само вызовет SelectTask() без индекса,
+            // но оно не срабатывает если элемент уже был выбран - поэтому
+            // текущую задачу указываем здесь явно
             if (index != -1)
             {
                 SetSelectedTaskIndex(index);
+                SetCurrentTaskBySelection();
                 return true;
             }
 
+            SetCurrentTaskBySelection();
+            return taskController.Task != null;
+        }
+
+        /// <summary>
+        /// указать текущую задачу по тому что выделено в списке
+        /// </summary>
+        void SetCurrentTaskBySelection()
+        {
             // обновим GUI
             RefreshGUI();
 
             // получим выбор
-            ListView.SelectedListViewItemCollection selItems = lwTasks.SelectedItems;
-            if (selIndex != -1)
-                return taskController.SetCurrentTask(tasks.GetTask(selIndex)); // укажем что у нас новая задача
-            else
-                return taskController.SetCurrentTask(null); // задача не выбрана
+            int selIndex = GetSelectedTaskIndex();
 
+            // укажем текущую задачу
+            taskController.SetCurrentTask((selIndex != -1) ? tasks.GetTask(selIndex) : null);
         }
 
         /// <summary>
@@ -387,19 +397,19 @@ namespace Board_Events.Controller
         /// <returns></returns>
         public void SetSelectedTaskIndex(int index)
         {
-            // индекс слишком большой
-            if (index >= lwTasks.Items.Count)
+            // уберем выбор
+            lwTasks.SelectedItems.Clear();
+
+            // выбирать нечего
+            if (index == -1)
                 return;
 
-            // уберем выбор
-            if (index == -1)
-            {
-                lwTasks.SelectedItems.Clear();
+            // индекс за пределами списка
+            if (index < 0 || index >= lwTasks.Items.Count)
                 return;
-            }
 
             // получим выбор
-            lwTasks.Items[index].Selected=true;
+            lwTasks.Items[index].Selected = true;
         }
 
         /// <summary>
@@ -459,7 +469,10 @@ namespace Board_Events.Controller
             SetTaskRow(item, task);
 
             // укажем что надо выбрать
-            lwTasks.Items[lwTasks.Items.Count-1].Selected = true;
+            SetSelectedTaskIndex(index);
+
+            // новая задача стала текущей - обновим панель вариантов
+            SetCurrentTaskBySelection();
 
             // запустим проверку всех задач
             if (Properties.Settings.Default.bAutoStartScheduler || isTasksSheduled)
@@ -473,14 +486,20 @@ namespace Board_Events.Controller
         /// <param name="iIndex">индекс задачи</param>
         public void TaskDeleted(BaseTask task, int index)
         {
+            // индекс за пределами списка - удалять нечего
+            if (index < 0 || index >= lwTasks.Items.Count)
+                return;
+
             // убеерм
             lwTasks.Items.RemoveAt(index);
 
-            // выберем предыдущий элемент
+            // выберем предыдущий элемент, иначе следующий
             if (index >= lwTasks.Items.Count)
                 index--;
-            if (index >= 0)
-                lwTasks.Items[index].Selected=true;
+            SetSelectedTaskIndex(index);
+
+            // список изменился - переключим текущую задачу на оставшийся выбор
+            SetCurrentTaskBySelection();
         }
 
         /// <summary>
@@ -490,6 +509,10 @@ namespace Board_Events.Controller
         /// <param name="iIndex">индекс задачи</param>
         public void TaskUpdated(BaseTask task, int index)
         {
+            // задача могла быть удалена из списка пока шло обновление
+            if (index < 0 || index >= lwTasks.Items.Count)
+                return;
+
             // поменяем в таблице
             ListViewItem item = lwTasks.Items[index];
             SetTaskRow(item,task);

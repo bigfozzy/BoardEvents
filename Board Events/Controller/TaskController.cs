@@ -77,17 +77,20 @@ namespace Board_Events.Controller
         // зададим индекс выбранного варианта
         void SetSelectedVariantIndex(int selIndex)
         {
-            // получим выбор
+            // снимем текущий выбор - иначе SelectedIndices.Add добавит
+            // второй выделенный элемент и GetVariant возьмёт не тот
+            lwVariants.SelectedItems.Clear();
+
+            // выбирать нечего
             if (selIndex == -1)
-                lwVariants.SelectedItems.Clear();
-            else
-            {
-                if (selIndex <= lwVariants.Items.Count - 1)
-                {
-                    lwVariants.Items[selIndex].Selected = true;
-                    lwVariants.SelectedIndices.Add(selIndex);
-                }
-            }
+                return;
+
+            // индекс за пределами списка
+            if (selIndex < 0 || selIndex > lwVariants.Items.Count - 1)
+                return;
+
+            lwVariants.Items[selIndex].Selected = true;
+            lwVariants.EnsureVisible(selIndex);
         }
         // обновить список вариантов
         void RefreshVariantsList()
@@ -125,9 +128,8 @@ namespace Board_Events.Controller
                 selIndex = lwVariants.Items.Count - 1;
             if (selIndex == -1 && lwVariants.Items.Count > 0)
                 selIndex = 0;
-            // зададим выбор
-            SetSelectedVariantIndex(selIndex);
-            // заджать активный враинат
+
+            // выделим вариант и обновим панель - SetVariant делает и то и другое
             SetVariant(selIndex);
         }
 
@@ -228,15 +230,12 @@ namespace Board_Events.Controller
         /// <param name="index"></param>
         public void SetVariant(int index = -1)
         {
-            // получим текущий вариант
-            TaskVariant variant;
+            // задан индекс - выделим его
             if (index != -1)
-            {
                 SetSelectedVariantIndex(index);
-                return;// variant = Task.GetVariant(index);
-            }
-            else
-                variant = GetVariant();
+
+            // получим текущий вариант по фактическому выбору в списке
+            TaskVariant variant = GetVariant();
 
             // вызвать делегат что данные текущего вариант поменялась - если он прописан
             if (onVariantUpdated!=null)
