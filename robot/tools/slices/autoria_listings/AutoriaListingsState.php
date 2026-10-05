@@ -10,8 +10,17 @@
  */
 class AutoriaListingsState
 {
-    /** Сколько живёт запись: месяц. Объявления на доске столько не хранятся. */
-    private const TTL_SECONDS = 2592000;
+    /**
+ * Сколько живёт запись.
+ *
+ * Раньше был месяц. Этого мало: на auto.ria машина спокойно висит в
+ * выдаче месяцами, и через 30 дней запись обрезалась, объявление
+ * снова попадало в «новые» - и покупатель получал дубль в отчёте.
+ * Повторно показывать одно и то же объявление хуже, чем держать файл
+ * состояния чуть крупнее: в файл попадают только по-настоящему новые
+ * объявления, за год это единицы тысяч записей, то есть меньше мегабайта.
+ */
+    private const TTL_SECONDS = 31536000;
 
     private string $path;
 
@@ -37,6 +46,19 @@ class AutoriaListingsState
     public function state(): array
     {
         return $this->state;
+    }
+
+    /**
+     * Заменить состояние целиком.
+     *
+     * Нужно там, где состояние правят не через markSeen(): разбор
+     * файла состояния вручную, откат к резервной копии, проверки.
+     *
+     * @param array<string, mixed> $state
+     */
+    public function setState(array $state): void
+    {
+        $this->state = $state + ['seen' => [], 'tasks' => []];
     }
 
     /**
@@ -161,8 +183,14 @@ class AutoriaListingsState
      * Убрать старые записи.
      *
      * Без этого файл растёт бесконечно.
+     *
+     * Возвращает количество удалённых записей, а не пишет в лог:
+     * логирование сделало бы класс зависимым от Studio и не позволяло
+     * бы проверить его обычным PHP. Сообщение собирает вызывающий.
+     *
+     * @return int сколько записей убрано
      */
-    public function prune(): void
+    public function prune(): int
     {
         $cutoff = time() - self::TTL_SECONDS;
         $removed = 0;
@@ -175,9 +203,7 @@ class AutoriaListingsState
             }
         }
 
-        if ($removed > 0) {
-            TOOLS::$log->info('Из состояния убрано старых объявлений: ' . $removed, __METHOD__);
-        }
+        return $removed;
     }
 
     private function ensureDir(): void

@@ -488,6 +488,40 @@ check('ожидание идёт до get_all_by_class',
 check('после navigate есть wait_js',
     str_contains($scraperSrc, 'WEB::$browser->wait_js()'), true);
 
+// --- Срок жизни записи состояния ---------------------------------------------------
+//
+// Запись обрезается по возрасту. Срок был месяц - этого мало: на
+// auto.ria машина висит в выдаче месяцами, и через месяц запись
+// обрезалась, объявление снова попадало в «новые», и в накопительном
+// отчёте появлялся дубль. Держать состояние год недорого: в файл
+// попадают только по-настоящему новые объявления.
+
+$ttlDir = sys_get_temp_dir() . '/board-robot-ttl-' . getmypid();
+@mkdir($ttlDir, 0777, true);
+
+$oldAd = new AutoriaListingItem('https://auto.ria.com/auto_bmw_x5_40d.html', 'BMW X5');
+$stateTtl = new AutoriaListingsState($ttlDir . '/state.json');
+$stateTtl->markSeen($oldAd);
+
+// 40 дней при сроке в год объявление должно остаться
+$aged40 = $stateTtl->state();
+$aged40['seen']['/auto_bmw_x5_40d.html']['seenAt'] = time() - 40 * 86400;
+$stateTtl->setState($aged40);
+$stateTtl->prune();
+check('объявление 40-дневной давности осталось в состоянии',
+    isset($stateTtl->state()['seen']['/auto_bmw_x5_40d.html']), true);
+
+// а вот годовой давности уже устарел
+$aged366 = $stateTtl->state();
+$aged366['seen']['/auto_bmw_x5_40d.html']['seenAt'] = time() - 366 * 86400;
+$stateTtl->setState($aged366);
+$stateTtl->prune();
+check('объявление годовой давности убрано',
+    isset($stateTtl->state()['seen']['/auto_bmw_x5_40d.html']), false);
+
+foreach (glob($ttlDir . '/*') ?: [] as $f) { @unlink($f); }
+@rmdir($ttlDir);
+
 // --- Сбор телефонов: по умолчанию выключен -----------------------------------------
 //
 // Условия RIA (п. 1.21 оферты) прямо запрещают автоматический сбор

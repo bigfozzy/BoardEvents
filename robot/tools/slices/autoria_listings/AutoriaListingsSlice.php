@@ -59,7 +59,11 @@ class AutoriaListingsSlice
         );
 
         $state = new AutoriaListingsState($stateDir . '/' . self::STATE_FILE);
-        $state->prune();
+
+        $pruned = $state->prune();
+        if ($pruned > 0) {
+            TOOLS::$log->info('Из состояния убрано старых объявлений: ' . $pruned, __METHOD__);
+        }
 
         $scraper = new AutoriaListingsScraper();
         $candidates = $scraper->harvestList($listUrl, $limit, $pages);
