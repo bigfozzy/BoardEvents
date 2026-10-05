@@ -53,6 +53,39 @@ The split follows the vendor's rules: a scraper does not format rows, a sink
 does not parse HTML, and the slice only wires them. `BoardRules.php` and the
 date parsing hold no browser calls at all, which is why they are testable.
 
+## What auto.ria actually serves
+
+Checked against the live board in October 2026. This is the part that matters,
+because it invalidated the old parser:
+
+| Was | Is now |
+|---|---|
+| card class `mainlink` | `product-card`, with `data-car-id` |
+| ad URL contains `/car/` | ad URL is `/auto_<model>_<id>.html` — `/car/` is the catalog menu |
+| `class="address" href=` in raw text | JSON-LD `schema.org/Vehicle` on the ad page |
+| phone from `.phone-wrap` | masked: `(068) XXX XX XX` |
+| date from "Объявление добавлено …" | **not in the page at all** |
+
+So:
+
+- **The parser reads JSON-LD**, not CSS classes. `schema.org/Vehicle` carries
+  brand, model, year, VIN, mileage, body, colour, fuel, gearbox, doors, price
+  and currency; the city comes from the breadcrumb block. JSON-LD is a declared
+  markup contract, so cosmetic redesigns do not break it.
+- **The phone is masked.** The full number is fetched by a separate request
+  after clicking the phone block. The button is not in the HTML — the block is
+  assembled from a JSON config — so the robot does not click it. Hard-coding a
+  locator we have not seen is forbidden by the XHE rules, and such a click
+  would simply not work. Result rows carry `phone_masked` and the seller name
+  so you know the number exists.
+- **There is no posted date**, so "only new" is decided by the state file, not
+  by the board's date. That is more accurate anyway — the C# version lost ads
+  silently on exactly this field.
+
+`tests/RealPageFixture.php` holds markup lifted from the live pages. Whoever
+fixes the parser after the next redesign updates the fixture, and the tests fail
+until parsing works again.
+
 ## Tests
 
 No CI, all local:
@@ -61,23 +94,30 @@ No CI, all local:
 php robot/tests/tests.php
 ```
 
-72 checks over the rules that decide what gets reported: phone normalization,
+131 checks over the rules that decide what gets reported: phone normalization,
 `8` → `7` conversion, date comparison, ad de-duplication, HTML/CSV escaping,
-column order. No Studio and no browser needed.
+column order, which links count as ads, and JSON-LD parsing against the real
+markup. No Studio and no browser needed.
 
 These checks are not decoration. They are the rules ported from the C# version,
 where they had already caught two real bugs — `GetTypeByUrl(null)` throwing on
-`IndexOf`, and Russian numbers with an `8` prefix being treated as foreign.
+`IndexOf`, and Russian numbers with an `8` prefix being treated as foreign. The
+fixture then caught three more: the seller name is stored in two different
+shapes in the payload, and the ad id is not at the end of the URL when query
+parameters follow.
 
 ## What is not finished
 
+- The phone cannot be collected automatically. See above — this is the open
+  product question, not a parsing oversight.
+- Scheduling is not wired up. One run = one pass over the boards. The Studio
+  scheduler (`WINDOW\scheduler`) or Windows Task Scheduler is the next step.
 - Only auto.ria parses. `BoardRules` knows olx and rst, but no scraper exists
   yet — one slice per board.
 - OLX forbids scraping in its terms. Do not build a paid product on it.
-- Scheduling is not wired up. One run = one pass over the boards. The Studio
-  scheduler (`WINDOW\scheduler`) or Windows Task Scheduler is the next step.
-- Telegram and mail notification is wired only through the vendor mailer
-  (`TOOLS::$mailer`). Telegram still needs its own slice.
+- Notification is not wired into the slice yet: the vendor mailer
+  (`TOOLS::$mailer`) is available and configured in `run.php`, but new ads only
+  reach the CSV.
 
 # legacy-csharp/ — the archived desktop app
 

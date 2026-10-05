@@ -10,15 +10,28 @@ class AutoriaListingsSink
      * Колонки результата.
      * Один источник истины и для фабрики писателя, и для записи.
      *
+     * Порядок обязан совпадать с AutoriaListingItem::toRow().
+     *
      * @var string[]
      */
     private const HEADERS = [
         'url',
         'title',
         'price',
+        'currency',
+        'mileage_km',
         'city',
+        'brand',
+        'model',
+        'year',
+        'vin',
+        'body_type',
+        'color',
+        'fuel',
+        'transmission',
         'phone',
-        'posted_date',
+        'phone_masked',
+        'seller',
     ];
 
     private SpreadsheetWriter $writer;

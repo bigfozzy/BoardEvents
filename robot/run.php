@@ -103,9 +103,13 @@ $settingsFilePath = __DIR__ . "/settings/settings.json";
  * @comment Адрес выдачи: откройте доску руками, отфильтруйте
  * (марка, модель, город, цена) и скопируйте адрес страницы.
  * Фильтры остаются в адресе, поэтому робот повторяет ваш выбор.
+ *
+ * ВНИМАНИЕ. Формат адреса auto.ria менялся: старый /ukraine/BMW/...
+ * отдаёт 404, рабочий - /car/bmw. Если доска перестроит ссылки
+ * снова, придётся править адрес здесь.
  */
 $autoriaBoardName = "auto.ria — BMW";
-$autoriaListUrl = "https://auto.ria.com/ukraine/bmw/?currency=UAH&limit=100";
+$autoriaListUrl = "https://auto.ria.com/car/bmw";
 
 /**
  * Куда положить результат.
