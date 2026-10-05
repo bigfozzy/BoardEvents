@@ -78,6 +78,7 @@ class AutoriaListingsSlice
         // открывать страницу объявления, если номер и так известен
         $fresh = [];
         $alreadySeen = 0;
+        $parseFailed = 0;
 
         foreach ($candidates as $candidate) {
             if ($state->isSeen($candidate->key())) {
@@ -85,7 +86,27 @@ class AutoriaListingsSlice
                 continue;
             }
 
-            $fresh[] = $scraper->fillDetails($candidate, $collectPhones);
+            $filled = $scraper->fillDetails($candidate, $collectPhones);
+
+            if ($filled === null) {
+                // Разбор не удался - доска, скорее всего, поменяла
+                // разметку. Такое объявление намеренно НЕ отмечается
+                // как просмотренное: иначе после починки парсера оно
+                // больше никогда не попадёт в отчёт, потому что робот
+                // будет считать, что его уже показывали.
+                $parseFailed++;
+                continue;
+            }
+
+            $fresh[] = $filled;
+        }
+
+        if ($parseFailed > 0) {
+            TOOLS::$log->warn(sprintf(
+                'Не удалось разобрать %d объявлений - в отчёт они не попали '
+                . 'и будут попробованы снова. Похоже, доска изменила разметку',
+                $parseFailed
+            ), __METHOD__, true);
         }
 
         $result = AutoriaListingsSelection::pick(

@@ -129,8 +129,14 @@ displayed, and the log says the number was not released — it never silently
 leaves the column empty, which would look like "this ad has no phone".
 
 `tests/RealPageFixture.php` holds markup lifted from the live pages. Whoever
-fixes the parser after the next redesign updates the fixture, and the tests fail
-until parsing works again.
+fixes the parser after the next redesign updates the fixture, and the tests
+fail until parsing works again.
+
+If an ad cannot be parsed it is **left out of the report and counted in the
+log**, and it is deliberately not marked as seen — so the next run tries it
+again. The alternative was worse: a row of empty cells that reads like "the
+board returned empty ads", and a permanently lost ad once the parser is
+fixed.
 
 ## Scheduling
 

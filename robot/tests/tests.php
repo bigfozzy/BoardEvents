@@ -158,6 +158,26 @@ check('страница без разметки', AutoriaListingsVehicleData::fr
 check('битый JSON не считается данными',
     AutoriaListingsVehicleData::fromPageSource('<script type="application/ld+json">{ битое</script>'), null);
 
+// Неразобранное объявление не должно попадать в отчёт строкой из одних
+// пустых ячеек и при этом не должно помечаться просмотренным - иначе
+// после починки парсера оно исчезнет навсегда. Проверяем по коду:
+// fillDetails обязан возвращать null, а слайс - считать и не отмечать.
+$sliceSrc = file_get_contents(
+    __DIR__ . '/../tools/slices/autoria_listings/AutoriaListingsSlice.php'
+);
+check('слайс обрабатывает неудачный разбор',
+    str_contains($sliceSrc, '$filled === null'), true);
+check('неудачный разбор считается',
+    str_contains($sliceSrc, '$parseFailed++'), true);
+check('неудачный разбор не отмечается просмотренным',
+    str_contains($sliceSrc, 'НЕ отмечается'), true);
+
+// сигнатура fillDetails должна допускать null
+$scraperMethod = new ReflectionMethod('AutoriaListingsScraper', 'fillDetails');
+$returnType = $scraperMethod->getReturnType();
+check('fillDetails может вернуть null',
+    $returnType !== null && $returnType->allowsNull(), true);
+
 // --- Какие ссылки считаются объявлениями ------------------------------------------
 //
 // На странице выдачи рядом с объявлениями лежит навигация доски.

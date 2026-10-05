@@ -208,10 +208,16 @@ class AutoriaListingsScraper
      * @param bool $collectPhones Раскрывать ли телефон. По умолчанию НЕТ:
      *   условия RIA это прямо запрещают - см. AutoriaListingsPhoneReveal
      *   и README, раздел «Условия досок».
-     * Меняет объект на месте и возвращает его же, чтобы вызывающий
-     * не собирал новый и не терял уже набранное.
+     * @return AutoriaListingItem|null null, если разобрать не удалось
+     *
+     * ВОЗВРАЩАЕТ null, А НЕ ИСХОДНЫЙ ОБЪЕКТ. Раньше при отсутствии
+     * блока schema.org/Vehicle возвращался объект с одним адресом, и
+     * он попадал в отчёт строкой из пустых ячеек - выглядело как
+     * «доска отдала пустые объявления», хотя доска просто поменяла
+     * разметку. Вызывающий обязан отличить «разобрали» от «не
+     * разобрали», поэтому null, а не объект.
      */
-    public function fillDetails(AutoriaListingItem $item, bool $collectPhones = false): AutoriaListingItem
+    public function fillDetails(AutoriaListingItem $item, bool $collectPhones = false): ?AutoriaListingItem
     {
         WEB::$browser->navigate($item->url);
         WEB::$browser->wait_js();
@@ -225,7 +231,7 @@ class AutoriaListingsScraper
                 . ' - разметка доски изменилась',
                 __METHOD__
             );
-            return $item;
+            return null;
         }
 
         $filled = AutoriaListingItem::fromVehicleData($data);
