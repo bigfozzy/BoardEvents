@@ -337,6 +337,7 @@ namespace Board_Events
             this.tbFromPassword.Size = new System.Drawing.Size(645, 20);
             this.tbFromPassword.TabIndex = 12;
             this.tbFromPassword.Text = "";
+            this.tbFromPassword.UseSystemPasswordChar = true;
             // 
             // tbFromEMail
             // 

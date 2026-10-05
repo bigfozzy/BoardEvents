@@ -77,12 +77,14 @@ namespace Board_Events
         void InitFolders()
         {
             // папки программы
+            // все папки рядом с exe - иначе они создавались в рабочем каталоге,
+            // который при запуске ярлыком не равен папке программы
             TempPath = Application.StartupPath + "\\Temp";
             Directory.CreateDirectory(TempPath);
             FolderTools.ClearFolder(TempPath);
-            Directory.CreateDirectory("Tasks");
-            Directory.CreateDirectory("Logs");
-            Directory.CreateDirectory("Results");
+            Directory.CreateDirectory(Application.StartupPath + "\\Tasks");
+            Directory.CreateDirectory(Application.StartupPath + "\\Logs");
+            Directory.CreateDirectory(Application.StartupPath + "\\Results");
         }
         /// <summary>
         /// задать шедулер
@@ -769,32 +771,39 @@ namespace Board_Events
         {
             if (url == "about:blank")
             {
-                if (prev_url == "about:blank")
+                // сбрасываем только если что-то было загружено - иначе
+                // пустое состояние дергает браузер на каждом обновлении
+                // списка, а с olx не возвращает панель в исходное состояние
+                if (prev_url != "about:blank")
                 {
                     chromeVariant.Visible = true;
                     wbIE.Visible = false;
                     chromeVariant.Load("about:blank");
+                    prev_url = url;
                 }
+                return;
+            }
+
+            // olx не работает в CEF - показываем в IE-контроле
+            if (url.IndexOf("olx.ua") != -1)
+            {
+                chromeVariant.Visible = false;
+                wbIE.Visible = true;
+
+                // адрес у IE-контрола в .NET Framework не читается,
+                // поэтому перезагружаем только при смене адреса
+                if (prev_url != url)
+                    wbIE.Navigate(url);
             }
             else
             {
+                wbIE.Visible = false;
+                chromeVariant.Visible = true;
+
                 if (url != chromeVariant.Address)
-                {
-                    if (url.IndexOf("olx.ua") != -1)
-                    {
-                        chromeVariant.Visible = false;
-                        wbIE.Visible = true;
-                        wbIE.Navigate(url);
-                    }
-                    else
-                    {
-                        wbIE.Visible = false;
-                        chromeVariant.Visible = true;
-                        if (url != chromeVariant.Address)
-                            chromeVariant.Load(url);
-                    }
-                }
+                    chromeVariant.Load(url);
             }
+
             prev_url = url;
         }
         /// <summary>
@@ -817,12 +826,7 @@ namespace Board_Events
             if (variant == null)
                 LoadVariantUrl("about:blank");
             else
-            {
-                /*if (variant.Url.IndexOf("olx.ua") != -1)
-                    LoadVariantUrl("https://whoer.net/");
-                else*/
                 LoadVariantUrl(variant.Url);
-            }
         }
 
         #endregion

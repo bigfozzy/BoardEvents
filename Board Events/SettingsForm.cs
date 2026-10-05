@@ -87,7 +87,7 @@ namespace Board_Events
         /// <returns></returns>
         bool IsAllFieldFiiled()
         {
-            // почта
+            // почта на которую приходят уведомления
             if (tbToEMail.Text == "" && chSendNewVariantsEMailAfterTaskCheck.Checked)
             {
                 // перейдем туда где надо ввести
@@ -98,6 +98,32 @@ namespace Board_Events
                 // не закрывать
                 return false;
             }
+
+            // отправитель тоже нужен, иначе уведомления не уйдут
+            if (chSendNewVariantsEMailAfterTaskCheck.Checked)
+            {
+                if (tbFromEMail.Text == "" || !IsValidEMail(tbFromEMail.Text))
+                {
+                    tsSettings.SelectedIndex = 3;
+                    tbFromEMail.Focus();
+                    ShowMessage.ShowInfoMessage("Не задан корректный адрес почты отправителя");
+
+                    // не закрывать
+                    return false;
+                }
+
+                // без пароля у провайдера письмо не уйдет
+                if (tbFromPassword.Text == "")
+                {
+                    tsSettings.SelectedIndex = 3;
+                    tbFromPassword.Focus();
+                    ShowMessage.ShowInfoMessage("Не задан пароль почты отправителя");
+
+                    // не закрывать
+                    return false;
+                }
+            }
+
             // звонки
             if (tbCallPlaginCode.Text == "" && chCallNewVariants.Checked)
             {
@@ -109,7 +135,42 @@ namespace Board_Events
                 // не закрывать
                 return false;
             }
+
+            // адрес плагина должен быть полным - иначе navigate уйдет в никуда
+            if (tbCallPlaginCode.Text != ""
+                && !tbCallPlaginCode.Text.StartsWith("http://")
+                && !tbCallPlaginCode.Text.StartsWith("https://"))
+            {
+                tsSettings.SelectedIndex = 2;
+                tbCallPlaginCode.Focus();
+                ShowMessage.ShowInfoMessage("Адрес страницы с плагином должен начинаться с http:// или https://");
+
+                // не закрывать
+                return false;
+            }
+
             return true;
+        }
+
+        /// <summary>
+        /// проверить что строка похожа на адрес почты
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        bool IsValidEMail(string address)
+        {
+            if (String.IsNullOrEmpty(address))
+                return false;
+
+            try
+            {
+                var mail = new System.Net.Mail.MailAddress(address);
+                return (mail.Address == address);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         /// <summary>
