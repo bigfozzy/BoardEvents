@@ -287,7 +287,7 @@ class Robot
      */
     private function runBoard(array $board, string $name, string $url): int
     {
-        global $autoriaLimit, $dataFolderPath;
+        global $autoriaLimit, $dataFolderPath, $collectPhones;
 
         $onlyNew = array_key_exists('onlyNew', $board) ? (bool)$board['onlyNew'] : true;
         $limit = isset($board['limit']) ? (int)$board['limit'] : (int)$autoriaLimit;
@@ -305,7 +305,8 @@ class Robot
             $name,
             $onlyNew,
             $limit,
-            $dataFolderPath
+            $dataFolderPath,
+            (bool)$collectPhones
         );
     }
 

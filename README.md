@@ -9,8 +9,10 @@ Two things live in this repository:
 
 # robot/ — the product
 
-Watches [auto.ria.com], opens only the ads it has not seen, collects each
-seller's phone number, and writes one result file per task into `data/`.
+Watches [auto.ria.com], opens only the ads it has not seen, and writes one
+result file per task into `data/`. By default it collects ad data only —
+see [Board conditions](#board-conditions--read-this-before-selling) for why
+phone numbers are not collected.
 
 ## Requirements
 
@@ -176,9 +178,45 @@ open it through Data → From Text with UTF-8.
   headed browser passing where headless does not. Untested and unpriced, so
   there is no parser here.
 - **OLX forbids scraping in its terms.** Do not build a paid product on it.
+- **Phone numbers on auto.ria are off by default** — see the conditions
+  section above. Not a technical limit, a licensing one.
 
 The robots' own conditions for auto.ria are also unchecked. Read them before
 selling.
+
+## Board conditions — read this before selling
+
+Checked against `https://www.ria.com/offert/auto/` and
+`https://auto.ria.com/robots.txt`.
+
+**`robots.txt` allows what the robot does.** For `User-agent: *` there is no
+`Disallow: /` — only specific paths are excluded, none of which the listing or
+ad pages use.
+
+**The offer allows collecting ad data.** Automated access to platform data
+that does *not* contain phone numbers is explicitly permitted: price, mileage,
+VIN, city, title, seller. That is most of what this robot collects.
+
+**The offer forbids collecting phone numbers.** Clause 1.21 says, in the
+parts that matter:
+
+- 1.21.1 — any automated access for collecting, copying, indexing, scraping,
+  aggregating or otherwise using users' phone numbers;
+- 1.21.2 — using or copying phone numbers without a separate licensing
+  agreement with the company;
+- 1.21.3 — using phone numbers without prior written consent, including
+  automated extraction, accumulation, archiving or caching, and putting them
+  into databases;
+- 1.21.4 — using numbers for commerce or mailing, or passing them to third
+  parties.
+
+So the phone-reveal code in `AutoriaListingsPhoneReveal` is **off by default**
+(`$collectPhones = false` in `run.php`) and must stay off unless you hold
+written consent from RIA. It is not there as a convenience toggle: selling a
+paid robot that does this is the same category of problem as OLX's scraping
+ban, and it would put your own channel at risk.
+
+Everything the robot collects with the flag off is the permitted part.
 
 ## What is not finished
 

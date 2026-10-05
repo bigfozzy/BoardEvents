@@ -111,13 +111,16 @@ class AutoriaListingsScraper
         return array_values($items);
     }
 
-    /**
+/**
      * Разобрать страницу объявления и заполнить объект.
      *
+     * @param bool $collectPhones Раскрывать ли телефон. По умолчанию НЕТ:
+     *   условия RIA это прямо запрещают - см. AutoriaListingsPhoneReveal
+     *   и README, раздел «Условия досок».
      * Меняет объект на месте и возвращает его же, чтобы вызывающий
      * не собирал новый и не терял уже набранное.
      */
-    public function fillDetails(AutoriaListingItem $item): AutoriaListingItem
+    public function fillDetails(AutoriaListingItem $item, bool $collectPhones = false): AutoriaListingItem
     {
         WEB::$browser->navigate($item->url);
         WEB::$browser->wait_js();
@@ -142,10 +145,19 @@ class AutoriaListingsScraper
             $filled->url = $item->url;
         }
 
+        if (!$collectPhones) {
+            // сбор контактов запрещён условиями доски, поэтому даже маску
+            // не оставляем: она из тех же данных, что и номер
+            $filled->phone = '';
+            $filled->phoneMasked = '';
+
+            return $filled;
+        }
+
         // Телефон в разметке замаскирован, поэтому берём его из окна,
         // которое появляется после клика. Если не раскрылся - оставляем
         // маску и пишем об этом: молча пустая колонка выглядит как
-        // «телефона нет», а на деле номер есть и просто не отдался.
+        // «телефона нет», а на деле номер есть и просто не отдали.
         $phone = (new AutoriaListingsPhoneReveal())->reveal();
 
         if ($phone !== '') {

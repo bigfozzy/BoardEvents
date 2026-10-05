@@ -32,6 +32,9 @@ class AutoriaListingsSlice
      * @param bool $onlyNew Применять фильтр по дате, если доска её отдаёт
      * @param int $limit Сколько максимум объявлений взять
      * @param string $stateDir Папка для файла состояния
+     * @param bool $collectPhones Раскрывать ли телефон. По умолчанию НЕТ -
+     *   условия RIA запрещают автоматический сбор номеров (п. 1.21 оферты),
+     *   см. AutoriaListingsPhoneReveal
      * @return int сколько объявлений попало в файл
      */
     public static function run(
@@ -40,7 +43,8 @@ class AutoriaListingsSlice
         string $boardName,
         bool $onlyNew = true,
         int $limit = 100,
-        string $stateDir = ''
+        string $stateDir = '',
+        bool $collectPhones = false
     ): int {
         if ($stateDir === '') {
             $stateDir = dirname($filePath);
@@ -82,7 +86,7 @@ class AutoriaListingsSlice
                 continue;
             }
 
-            $item = $scraper->fillDetails($candidate);
+            $item = $scraper->fillDetails($candidate, $collectPhones);
 
             // если доска всё-таки отдала дату - уважаем фильтр
             if ($item->postedDate !== ''
