@@ -202,56 +202,66 @@ check('tel для UA', BoardRules::phoneHref('063 123 45 67'), 'tel:+38063123456
 // чужой код не должен превратиться в tel:, иначе письмо предложит позвонить не туда
 check('tel для чужой страны пуст', BoardRules::phoneHref('+48 601 234 567'), '');
 
-// --- Согласованность колонок ------------------------------------------------------
+// --- Колонки выгрузки ---------------------------------------------------------------
 
-// Порядок полей в toRow() обязан совпадать с заголовками слайса,
-// иначе url уедет в колонку title. Заголовки лежат в классе-писателе,
-// который лежит в core/, и подключить его здесь нельзя без XHE,
-// поэтому сверяем с ожидаемым списком.
+// Раньше строка собиралась позициями, и порядок полей обязан был
+// совпадать с порядком заголовков: переставил поле - значение уехало в
+// соседнюю колонку. Теперь писатель выбирает колонки по именам.
+
 $item2 = AutoriaListingItem::fromVehicleData($data);
-$row = $item2->toRow();
+$record = $item2->toRecord();
 
-$expectedHeaders = [
-    'url', 'title', 'price', 'currency', 'mileage_km', 'city', 'brand', 'model',
-    'year', 'vin', 'body_type', 'color', 'fuel', 'transmission',
-    'phone', 'phone_masked', 'seller',
-];
+$headersNoPhone = AutoriaListingsSink::headers(false);
+$headersPhone = AutoriaListingsSink::headers(true);
 
-check('колонок семнадцать', count($row), count($expectedHeaders));
-check('колонки по числу', count($row), count($expectedHeaders));
+check('без телефонов колонок пятнадцать', count($headersNoPhone), 15);
+check('с телефонами колонок семнадцать', count($headersPhone), 17);
 
-check('колонка url', $row[0], 'https://auto.ria.com/auto_bmw_x5_40521845.html');
-check('колонка title', $row[1], 'BMW X5 2023');
-check('колонка price', $row[2], '97900');
-check('колонка currency', $row[3], 'USD');
-check('колонка mileage', $row[4], '56000');
-check('колонка city', $row[5], 'kiev');
-check('колонка brand', $row[6], 'BMW');
-check('колонка model', $row[7], 'X5');
-check('колонка year', $row[8], '2023');
-check('колонка vin', $row[9], '5UX33EU06R9T12665');
-check('колонка body_type', $row[10], 'Легковые');
-check('колонка color', $row[11], 'Черный');
-check('колонка fuel', $row[12], 'Бензин');
-check('колонка transmission', $row[13], 'Автомат');
+// без согласия RIA телефонных колонок в файле нет вообще: пустая
+// колонка «телефон» выглядит как «собирали и не нашли»
+check('колонки телефона нет', in_array('phone', $headersNoPhone, true), false);
+check('колонки маски нет', in_array('phone_masked', $headersNoPhone, true), false);
 
-// маска не должна попасть в колонку phone - по ней нельзя позвонить,
-// это отдельная колонка phone_masked
-check('в phone нет маски', $row[14], '');
-check('маска в своей колонке', $row[15], '(068) XXX XX XX');
-check('колонка seller', $row[16], 'Kiev Autotrade');
+// с согласием - есть, и стоят перед продавцом
+check('порядок с телефонами', array_slice($headersPhone, 14, 3), ['phone', 'phone_masked', 'seller']);
 
+// каждая колонка файла должна быть и в записи объекта, иначе в строке
+// окажется пустая ячейка вместо данных
+foreach ($headersPhone as $header) {
+    check("колонка '$header' есть в записи", array_key_exists($header, $record), true);
+}
+
+// значения живого объявления на своих местах
+check('url', $record['url'], 'https://auto.ria.com/auto_bmw_x5_40521845.html');
+check('title', $record['title'], 'BMW X5 2023');
+check('price', $record['price'], '97900');
+check('currency', $record['currency'], 'USD');
+check('mileage', $record['mileage_km'], '56000');
+check('city', $record['city'], 'kiev');
+check('brand', $record['brand'], 'BMW');
+check('model', $record['model'], 'X5');
+check('year', $record['year'], '2023');
+check('vin', $record['vin'], '5UX33EU06R9T12665');
+check('body_type', $record['body_type'], 'Легковые');
+check('color', $record['color'], 'Черный');
+check('fuel', $record['fuel'], 'Бензин');
+check('transmission', $record['transmission'], 'Автомат');
+check('seller', $record['seller'], 'Kiev Autotrade');
+
+// маска не должна попасть в колонку phone - по ней нельзя позвонить
+check('в phone нет маски', $record['phone'], '');
+check('маска в своей колонке', $record['phone_masked'], '(068) XXX XX XX');
 check('звонить нечем', $item2->hasCallablePhone(), false);
 check('маска видна', $item2->hasPhoneMask(), true);
 
-// Сверяем, что заголовки писателя совпадают с ожидаемыми.
-// Класс AutoriaListingsSink лежит в слайсе, но тянет за собой
-// порт SpreadsheetWriter из core/, поэтому сравниваем текстом.
-$sink = file_get_contents(__DIR__ . '/../tools/slices/autoria_listings/AutoriaListingsSink.php');
-foreach ($expectedHeaders as $header) {
-    check("заголовок '$header' есть в писателе",
-        str_contains($sink, "'" . $header . "'"), true);
-}
+// порядок полей в записи не должен влиять на выгрузку - это и есть
+// причина, по которой запись именованная
+$reordered = array_reverse($record, true);
+$rowFromReordered = [];
+foreach ($headersNoPhone as $h) { $rowFromReordered[] = (string)($reordered[$h] ?? ''); }
+$rowFromOrdered = [];
+foreach ($headersNoPhone as $h) { $rowFromOrdered[] = (string)($record[$h] ?? ''); }
+check('перестановка полей не меняет строку', $rowFromReordered, $rowFromOrdered);
 
 // --- Раскрытие телефона ------------------------------------------------------------
 //
@@ -476,12 +486,16 @@ $headerCells = str_getcsv($lines[0], ';');
 $firstCells  = str_getcsv($lines[1], ';');
 $trickyCells = str_getcsv($lines[2], ';');
 
-check('колонок в заголовке', count($headerCells), count($expectedHeaders));
-check('колонок в первом объявлении', count($firstCells), count($expectedHeaders));
-check('колонок во втором объявлении', count($trickyCells), count($expectedHeaders));
+check('колонок в заголовке', count($headerCells), count($headersNoPhone));
+check('колонок в первом объявлении', count($firstCells), count($headersNoPhone));
+check('колонок во втором объявлении', count($trickyCells), count($headersNoPhone));
 
 check('заголовок начинается с url', $headerCells[0], 'url');
 check('заголовок второй колонки', $headerCells[1], 'title');
+
+// в файле без согласия RIA нет ни телефона, ни маски
+check('в файле нет колонки телефона', in_array('phone', $headerCells, true), false);
+check('в файле нет колонки маски', in_array('phone_masked', $headerCells, true), false);
 
 // первое объявление пришло с живого объявления
 check('в файле VIN', in_array('5UX33EU06R9T12665', $firstCells, true), true);
@@ -492,12 +506,19 @@ check('в файле город', in_array('kiev', $firstCells, true), true);
 // если разъехалось - число колонок выше это покажет
 check('заголовок с запятой остался одним полем', $trickyCells[1], 'BMW X3; тест "кавычки" и запятая');
 check('колонка url второго объявления', $trickyCells[0], 'https://auto.ria.com/auto_bmw_x3_40459290.html');
-check('кузов второго объявления', $trickyCells[10], 'Кроссовер');
 
-// маска не должна просочиться в колонку phone (индекс 14)
-check('phone пустой', $trickyCells[14], '');
-check('маска в своей колонке', $trickyCells[15], '(068) XXX XX XX');
-check('продавец второго объявления', $trickyCells[16], 'Частное лицо');
+// значения стоят именно в своих колонках - сверяем по имени заголовка,
+// а не по номеру: так проверка не ломается от перестановки колонок
+$headerIndex = array_flip($headerCells);
+$cell = static fn (array $cells, string $header): string
+    => (string)($cells[$headerIndex[$header] ?? -1] ?? '<нет колонки>');
+
+check('body_type второго объявления', $cell($trickyCells, 'body_type'), 'Кроссовер');
+check('продавец второго объявления', $cell($trickyCells, 'seller'), 'Частное лицо');
+check('цена второго объявления', $cell($trickyCells, 'price'), '12345');
+check('цвет второго объявления', $cell($trickyCells, 'color'), 'Синий');
+check('VIN второго объявления', $cell($trickyCells, 'vin'), 'WBAXXX1234');
+check('телефон в файле пуст', $cell($trickyCells, 'phone'), '<нет колонки>');
 
 // кодировка: хелпер пишет UTF-8 без BOM. Excel такие файлы открывает
 // догадками, поэтому по умолчанию результат .xlsx (см. run.php),

@@ -166,8 +166,11 @@ parameters follow.
 
 `$autoriaDataFilePath` in `run.php` decides the format by extension. Default is
 `.xlsx`: the CSV writer emits UTF-8 without a BOM, and Excel guesses at such
-files and shows mojibake instead of Cyrillic. Use `.csv` if you prefer it, and
-open it through Data → From Text with UTF-8.
+files and shows mojibake for Cyrillic. Use `.csv` if you prefer it, and open
+it through Data → From Text with UTF-8.
+
+Columns are picked by name, not by position, so reordering fields in
+`AutoriaListingItem` cannot shift data into the wrong column.
 
 ## Boards that were not built, and why
 

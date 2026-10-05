@@ -150,32 +150,38 @@ class AutoriaListingItem
     }
 
     /**
-     * Строка для таблицы. Порядок = порядку заголовков в
-     * AutoriaListingsSink, иначе колонки разъедутся.
+     * Поля объявления по именам колонок.
      *
-     * @return array<int, string>
+     * Именованный массив, а не список: раньше строка собиралась
+     * позициями, и порядок полей обязан был совпадать с порядком
+     * заголовков в AutoriaListingsSink. Стоило одному переставить поле -
+     * и значения молча уезжали в соседние колонки, а тесты ловили
+     * это только если их кто-то допишет. Теперь писатель сам выбирает
+     * нужные колонки по именам.
+     *
+     * @return array<string, string>
      */
-    public function toRow(): array
+    public function toRecord(): array
     {
         return [
-            $this->url,
-            $this->title,
-            $this->price === null ? '' : (string)$this->price,
-            $this->currency,
-            $this->mileage === null ? '' : (string)$this->mileage,
-            $this->city,
-            $this->brand,
-            $this->model,
-            $this->year === null ? '' : (string)$this->year,
-            $this->vin,
-            $this->bodyType,
-            $this->color,
-            $this->fuelType,
-            $this->transmission,
-            // нормализованный телефон, а не маска: по маске не позвонить
-            $this->getCallablePhone(),
-            $this->phoneMasked,
-            $this->sellerName,
+            'url' => $this->url,
+            'title' => $this->title,
+            'price' => $this->price === null ? '' : (string)$this->price,
+            'currency' => $this->currency,
+            'mileage_km' => $this->mileage === null ? '' : (string)$this->mileage,
+            'city' => $this->city,
+            'brand' => $this->brand,
+            'model' => $this->model,
+            'year' => $this->year === null ? '' : (string)$this->year,
+            'vin' => $this->vin,
+            'body_type' => $this->bodyType,
+            'color' => $this->color,
+            'fuel' => $this->fuelType,
+            'transmission' => $this->transmission,
+            // нормализованный телефон, а не маска: по маске позвонить нельзя
+            'phone' => $this->getCallablePhone(),
+            'phone_masked' => $this->phoneMasked,
+            'seller' => $this->sellerName,
         ];
     }
 

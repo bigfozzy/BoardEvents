@@ -7,14 +7,13 @@
 class AutoriaListingsSink
 {
     /**
-     * Колонки результата.
-     * Один источник истины и для фабрики писателя, и для записи.
+     * Колонки результата, кроме телефонных.
      *
-     * Порядок обязан совпадать с AutoriaListingItem::toRow().
+     * Один источник истины для выгрузки и для заголовка файла.
      *
      * @var string[]
      */
-    private const HEADERS = [
+    private const COLUMNS = [
         'url',
         'title',
         'price',
@@ -29,10 +28,25 @@ class AutoriaListingsSink
         'color',
         'fuel',
         'transmission',
+    ];
+
+    /**
+     * Телефонные колонки. Добавляются только при согласии RIA.
+     *
+     * По умолчанию их нет в файле: пока сбор номеров выключен, они
+     * были бы пустыми, а пустая колонка «телефон» в готовом отчёте
+     * вводит в заблуждение - выглядит, будто номера собирались и не
+     * нашлись. Условия доски это и запрещают, см. README.
+     *
+     * @var string[]
+     */
+    private const PHONE_COLUMNS = [
         'phone',
         'phone_masked',
-        'seller',
     ];
+
+    /** Колонка продавца - всегда, имя продажца условиями не запрещено */
+    private const SELLER_COLUMN = 'seller';
 
     private SpreadsheetWriter $writer;
 
@@ -42,25 +56,48 @@ class AutoriaListingsSink
     }
 
     /**
+     * Колонки результата.
+     *
+     * @param bool $withPhones Добавить телефонные колонки
      * @return string[]
      */
-    public static function headers(): array
+    public static function headers(bool $withPhones = false): array
     {
-        return self::HEADERS;
+        $columns = self::COLUMNS;
+
+        if ($withPhones) {
+            $columns = array_merge($columns, self::PHONE_COLUMNS);
+        }
+
+        $columns[] = self::SELLER_COLUMN;
+
+        return $columns;
     }
 
     /**
      * Записать объявления и вернуть путь к файлу результата.
      *
      * @param AutoriaListingItem[] $items
+     * @param bool $withPhones Добавить телефонные колонки
      * @return string
      */
-    public function write(array $items): string
+    public function write(array $items, bool $withPhones = false): string
     {
-        $this->writer->writeHeader(self::HEADERS);
+        $headers = self::headers($withPhones);
+
+        $this->writer->writeHeader($headers);
 
         foreach ($items as $item) {
-            $this->writer->writeRow($item->toRow());
+            $record = $item->toRecord();
+            $row = [];
+
+            // колонки выбираются по именам, поэтому порядок полей в
+            // AutoriaListingItem больше не важен
+            foreach ($headers as $header) {
+                $row[] = (string)($record[$header] ?? '');
+            }
+
+            $this->writer->writeRow($row);
         }
 
         return $this->writer->save();

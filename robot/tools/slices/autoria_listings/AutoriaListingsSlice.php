@@ -121,8 +121,11 @@ class AutoriaListingsSlice
             return 0;
         }
 
-        $writer = SpreadsheetWriters::forFile($filePath, AutoriaListingsSink::headers());
-        $saved = (new AutoriaListingsSink($writer))->write($accepted);
+        $writer = SpreadsheetWriters::forFile(
+            $filePath,
+            AutoriaListingsSink::headers($collectPhones)
+        );
+        $saved = (new AutoriaListingsSink($writer))->write($accepted, $collectPhones);
 
         // состояние сохраняем только после успешной записи результата:
         // наоборот - потеряли бы и файл, и память о проверке
