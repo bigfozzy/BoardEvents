@@ -36,3 +36,6 @@ Board Events/XHE/
 Thumbs.db
 .DS_Store
 desktop.ini
+
+## Test build output
+tests-out/

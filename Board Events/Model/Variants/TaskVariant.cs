@@ -481,10 +481,14 @@ namespace Board_Events.Model.Results
 
             // нормализуем - начинается с 0 - значит украина
             if (phone[0] == '0')
-                phone = "+38"+ phone;
+                phone = "+38" + phone;
+            // российский междугородний префикс 8 - заменяем на 7, а не
+            // добавляем плюс: 8 (912) 345-67-89 это +7 912...
+            else if (phone[0] == '8' && phone.Length > 1)
+                phone = "+7" + phone.Substring(1);
             // добавим + для россии и украины
             else if (phone[0] == '7' || phone.StartsWith("38"))
-                phone = "+"+ phone;
+                phone = "+" + phone;
 
             // если не +7 и +38 - то не звонить
             if (phone.StartsWith("+7") || phone.StartsWith("+38"))

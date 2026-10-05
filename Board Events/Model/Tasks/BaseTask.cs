@@ -151,6 +151,10 @@ namespace Board_Events
         /// <returns></returns>
         public static string GetTypeByUrl(string url)
         {
+            // null раньше ронял метод на url.IndexOf
+            if (string.IsNullOrEmpty(url))
+                return "unknown";
+
             // в зависимости от урла
             if (url.IndexOf("auto.ria.com") != -1 || url.IndexOf("autoria.com")!=-1)
                 return "autoria.com";
@@ -245,6 +249,48 @@ namespace Board_Events
         /// запустить задачу на выполнение сейчас
         /// </summary>
         /// <returns></returns>
+        /// <summary>
+        /// интервал проверки в минутах по строке из cbTimeCheck
+        ///
+        /// Строки обязаны совпадать с элементами combo box в
+        /// AddTaskDlg.Designer.cs. Раньше соответствие жило прямо в
+        /// StartScheduling, и строка «раз в 10 часов» не совпала с
+        /// «раз в 10 часов» из интерфейса - интервал молча не работал.
+        /// </summary>
+        /// <param name="timeCheck">строка из выпадающего списка</param>
+        /// <returns>минуты, либо -1 если строка не распознана</returns>
+        public static int GetIntervalMinutes(string timeCheck)
+        {
+            switch (timeCheck)
+            {
+                case "раз в минуту":     return 1;
+                case "раз в 3 минуты":   return 3;
+                case "раз в 5 минут":    return 5;
+                case "раз в 10 минут":   return 10;
+                case "раз в 15 минут":   return 15;
+                case "раз в 20 минут":   return 20;
+                case "раз в 30 минут":   return 30;
+                case "раз в час":        return 60;
+                case "раз в 2 часа":     return 120;
+                case "раз в 3 часа":     return 180;
+                case "раз в 4 часа":     return 240;
+                case "раз в 5 часов":    return 300;
+                case "раз в 10 часов":   return 600;
+                case "раз в 12 часов":   return 720;
+                case "раз в сутки":      return 1440;
+                case "раз в неделю":     return 10080;
+            }
+
+            // не распознано - вызывающий не создаст триггер и сообщит об этом
+            return -1;
+        }
+
+        /// <summary>
+        /// запустить задачу на выполнение сейчас
+        /// </summary>
+        /// <param name="scheduler"></param>
+        /// <param name="isNow"></param>
+        /// <returns></returns>
         public bool StartScheduling(IScheduler scheduler,bool isNow=false)
         {
             // уже в расписании - сначала снимем предыдущую запись,
@@ -280,61 +326,16 @@ namespace Board_Events
             }
             else
             {
-                // распиание задач в часах
-                int hoursInterval = -1;
-                if (TimeCheck == "раз в час")
-                    hoursInterval = 1;
-                else if (TimeCheck == "раз в 2 часа")
-                    hoursInterval = 2;
-                else if (TimeCheck == "раз в 3 часа")
-                    hoursInterval = 3;
-                else if (TimeCheck == "раз в 4 часа")
-                    hoursInterval = 4;
-                else if (TimeCheck == "раз в 5 часов")
-                    hoursInterval = 5;
-                else if (TimeCheck == "раз в 10 часов")
-                    hoursInterval = 10;
-                else if (TimeCheck == "раз в 12 часов")
-                    hoursInterval = 12;
-                else if (TimeCheck == "раз в сутки")
-                    hoursInterval = 24;
-                else if (TimeCheck == "раз в неделю")
-                    hoursInterval = 168;
-                // интервал в часах
-                if (hoursInterval > 0)
+                // интервал в минутах - единая точка сопоставления,
+                // строки обязаны совпадать с cbTimeCheck в AddTaskDlg
+                int minutes = GetIntervalMinutes(TimeCheck);
+
+                if (minutes > 0)
                 {
-                    // тригер - запустить с заданным часовым интервалом
                     trigger = TriggerBuilder.Create()
                         .WithIdentity("SchedulingTrigger" + Name + shedulerTaskCounter.ToString(), "scheduling")
                         .WithSimpleSchedule(x => x
-                            .WithIntervalInHours(hoursInterval)
-                            .RepeatForever())
-                        .Build();
-                }
-                
-                int minuteInterval = -1;
-                if (TimeCheck == "раз в минуту")
-                    minuteInterval = 1;
-                else if (TimeCheck == "раз в 3 минуты")
-                    minuteInterval = 3;
-                else if (TimeCheck == "раз в 5 минут")
-                    minuteInterval = 5;
-                else if (TimeCheck == "раз в 10 минут")
-                    minuteInterval = 10;
-                else if (TimeCheck == "раз в 15 минут")
-                    minuteInterval = 15;
-                else if (TimeCheck == "раз в 20 минут")
-                    minuteInterval = 20;
-                else if (TimeCheck == "раз в 30 минут")
-                    minuteInterval = 30;
-                // интервал в минутах
-                if (minuteInterval > 0)
-                {
-                    // тригер - запустить с заданным часовым интервалом
-                    trigger = TriggerBuilder.Create()
-                        .WithIdentity("SchedulingTrigger" + Name + shedulerTaskCounter.ToString(), "scheduling")
-                        .WithSimpleSchedule(x => x
-                            .WithIntervalInMinutes(minuteInterval)
+                            .WithIntervalInMinutes(minutes)
                             .RepeatForever())
                         .Build();
                 }
