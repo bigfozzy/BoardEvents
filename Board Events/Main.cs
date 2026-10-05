@@ -126,6 +126,10 @@ namespace Board_Events
             pnlChromeVariant.Controls.Add(chromeVariant);
             chromeVariant.Dock = DockStyle.Fill;
 
+            // если страница не загрузилась - откроем ее в обычном браузере,
+            // так терять объявление из-за движка не придется
+            chromeVariant.LoadError += OnVariantLoadError;
+
             // текст главного окна - добавим информацию о версии
             this.Text += " " + Application.ProductVersion;
 
@@ -790,39 +794,46 @@ namespace Board_Events
             if (url == "about:blank")
             {
                 // сбрасываем только если что-то было загружено - иначе
-                // пустое состояние дергает браузер на каждом обновлении
-                // списка, а с olx не возвращает панель в исходное состояние
+                // пустое состояние дергает браузер на каждом обновлении списка
                 if (prev_url != "about:blank")
                 {
-                    chromeVariant.Visible = true;
-                    wbIE.Visible = false;
                     chromeVariant.Load("about:blank");
                     prev_url = url;
                 }
                 return;
             }
 
-            // olx не работает в CEF - показываем в IE-контроле
-            if (url.IndexOf("olx.ua") != -1)
-            {
-                chromeVariant.Visible = false;
-                wbIE.Visible = true;
-
-                // адрес у IE-контрола в .NET Framework не читается,
-                // поэтому перезагружаем только при смене адреса
-                if (prev_url != url)
-                    wbIE.Navigate(url);
-            }
-            else
-            {
-                wbIE.Visible = false;
-                chromeVariant.Visible = true;
-
-                if (url != chromeVariant.Address)
-                    chromeVariant.Load(url);
-            }
+            // второй браузер удален - все доски открываем в CEF,
+            // при ошибке загрузки страница уходит в системный браузер
+            if (url != chromeVariant.Address)
+                chromeVariant.Load(url);
 
             prev_url = url;
+        }
+
+        /// <summary>
+        /// страница не загрузилась встроенным браузером - открываем в системном
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        void OnVariantLoadError(object sender, LoadErrorEventArgs e)
+        {
+            // не показываем диалог на пустой панели
+            if (e.FailedUrl == null || e.FailedUrl == "about:blank")
+                return;
+
+            // отменяем загрузку, чтобы не осталось страницы с ошибкой
+            if (e.ErrorCode == CefErrorCode.Aborted)
+                return;
+
+            // открываем во внешнем браузере
+            try
+            {
+                FileTools.ShowFile(e.FailedUrl);
+            }
+            catch (Exception)
+            {
+            }
         }
         /// <summary>
         /// текущий вариант был обновлен

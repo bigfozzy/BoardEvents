@@ -1,4 +1,4 @@
-﻿namespace Board_Events
+namespace Board_Events
 {
     partial class Main
     {
@@ -110,7 +110,6 @@
             this.tsiExportAllVariants = new System.Windows.Forms.ToolStripMenuItem();
             this.pnBrowser = new System.Windows.Forms.Panel();
             this.pnlChromeVariant = new System.Windows.Forms.Panel();
-            this.wbIE = new System.Windows.Forms.WebBrowser();
             this.label1 = new System.Windows.Forms.Label();
             this.tsVarianDatas = new System.Windows.Forms.ToolStrip();
             this.tsbOpenVariant = new System.Windows.Forms.ToolStripButton();
@@ -950,23 +949,12 @@
             // 
             // pnlChromeVariant
             // 
-            this.pnlChromeVariant.Controls.Add(this.wbIE);
             this.pnlChromeVariant.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlChromeVariant.Location = new System.Drawing.Point(0, 27);
             this.pnlChromeVariant.Name = "pnlChromeVariant";
             this.pnlChromeVariant.Size = new System.Drawing.Size(1061, 211);
             this.pnlChromeVariant.TabIndex = 14;
-            // 
-            // wbIE
-            // 
-            this.wbIE.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.wbIE.Location = new System.Drawing.Point(0, 0);
-            this.wbIE.MinimumSize = new System.Drawing.Size(20, 20);
-            this.wbIE.Name = "wbIE";
-            this.wbIE.ScriptErrorsSuppressed = true;
-            this.wbIE.Size = new System.Drawing.Size(1061, 211);
-            this.wbIE.TabIndex = 1;
-            // 
+            //             // 
             // label1
             // 
             this.label1.Dock = System.Windows.Forms.DockStyle.Top;
@@ -1706,7 +1694,6 @@
         private System.Windows.Forms.ColumnHeader colTalk;
         private System.Windows.Forms.Panel pnBrowser;
         private System.Windows.Forms.Panel pnlChromeVariant;
-        private System.Windows.Forms.WebBrowser wbIE;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.ToolStrip tsVarianDatas;
         private System.Windows.Forms.ToolStripButton tsbOpenVariant;

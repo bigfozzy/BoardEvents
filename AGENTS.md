@@ -61,9 +61,13 @@ force-push выполнен. Не восстанавливать эти стро
   - пул: `quartz.threadPool.type` = `Quartz.Simpl.DefaultThreadPool`,
     `maxConcurrency` = 20 (в 3.x ключ не константа в исходниках фабрики,
     но `PropertyThreadPoolPrefix` = `quartz.threadPool` — префикс верный)
-- **`wbIE`** (MSHTML `WebBrowser`) в `Main.Designer.cs` — IE-движок, вне поддержки.
-  Используется для отображения вариантов с olx.ua. Замена на второй
-  `ChromiumWebBrowser` или удаление с переходом на CEF для всех досок.
+- **`wbIE` удалён** (октябрь 2026). Второй встроенный движок
+  (`System.Windows.Forms.WebBrowser`, MSHTML) использовался только для
+  olx.ua с пометкой «не работает в CEF» — при CEF 53 / Chromium 53.
+  На CEF 120 причина исчезла, а IE-мотор всё равно не грузит
+  современные JS-сайты. Все доски открываются в `chromeVariant`,
+  при `LoadError` страница уходит в системный браузер
+  (`Main.OnVariantLoadError`).
 - **Пароль почты хранится открытым текстом** в user-settings. Учитывая
   фейковый характер тестовых данных — низкий приоритет, но при вводе
   реального пароля стоит перейти на DPAPI (`ProtectedData`).
