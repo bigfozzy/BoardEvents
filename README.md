@@ -175,6 +175,26 @@ it through Data → From Text with UTF-8.
 Columns are picked by name, not by position, so reordering fields in
 `AutoriaListingItem` cannot shift data into the wrong column.
 
+The `.xlsx` path could not be run here — it goes through `SYSTEM::$excelfile`
+on the Studio side — but it was checked against the API: `ExcelHelper::create()`
+writes the header row, and the `0` passed to `add_rows()` is the **sheet
+number, not the first row**, so the header is not overwritten. The CSV path
+is exercised for real.
+
+## Before submitting to the catalog
+
+`robot/passport.json` is filled in as far as it can be without you: robot
+name, a unique key, timestamps and the description. Three fields still need
+you, because they are yours and I would only be guessing:
+
+- `LaunchedFilePath` — full path to `run.php` on a buyer's machine;
+- `DeveloperName` — your name;
+- `DeveloperComments` — a link to the project documentation.
+
+The remaining fields (`Customer`, `WmName`, `DogovorNum` and the rest) are
+vendor internal fields the robot never reads. How to fill them is in the
+Human Emulator documentation, section "Паспорт".
+
 ## Boards that were not built, and why
 
 - **rst.ua is behind Cloudflare Turnstile.** A plain request gets `403`, and a
