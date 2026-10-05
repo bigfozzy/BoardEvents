@@ -8,9 +8,9 @@
  *
  * Порядок работы:
  *  1. страница выдачи -> адреса объявлений;
- *  2. уже приходившие отбрасываются по файлу состояния;
- *  3. по каждому новому открывается страница объявления - там JSON-LD;
- *  4. результат пишется в файл;
+ *  2. по каждому новому открывается страница объявления - там JSON-LD;
+ *  3. отбор идёт в AutoriaListingsSelection, без браузера;
+ *  4. принятые объявления пишутся в файл;
  *  5. состояние сохраняется - атомарно, в самом конце.
  *
  * ПРО «ТОЛЬКО НОВЫЕ». Раньше новизна определялась датой объявления на
@@ -71,52 +71,37 @@ class AutoriaListingsSlice
             return 0;
         }
 
-        $createdAt = $state->getTaskCreatedAt($boardName);
-
-        $accepted = [];
+        // детали читаются только для тех, кого ещё не показывали: зачем
+        // открывать страницу объявления, если номер и так известен
+        $fresh = [];
         $alreadySeen = 0;
-        $skippedOld = 0;
-        $skippedNoDate = 0;
-        $noCallablePhone = 0;
 
         foreach ($candidates as $candidate) {
-            // новизна определяется состоянием, а не датой доски
             if ($state->isSeen($candidate->key())) {
                 $alreadySeen++;
                 continue;
             }
 
-            $item = $scraper->fillDetails($candidate, $collectPhones);
-
-            // если доска всё-таки отдала дату - уважаем фильтр
-            if ($item->postedDate !== ''
-                && !BoardRules::shouldAccept($item->postedDate, $createdAt, $onlyNew)) {
-                $skippedOld++;
-                $state->markSeen($item);
-                continue;
-            }
-
-            if ($onlyNew && $item->postedDate === '') {
-                $skippedNoDate++;
-            }
-
-            if (!$item->hasCallablePhone()) {
-                $noCallablePhone++;
-            }
-
-            $accepted[] = $item;
-            $state->markSeen($item);
+            $fresh[] = $scraper->fillDetails($candidate, $collectPhones);
         }
+
+        $result = AutoriaListingsSelection::pick(
+            $fresh,
+            $state,
+            $state->getTaskCreatedAt($boardName),
+            $onlyNew
+        );
+
+        // уже приходившие отсчитаны здесь, до отбора: в pick() их нет,
+        // поэтому в сводку дописываем сами, иначе счётчик всегда ноль
+        $result['skippedAlreadySeen'] += $alreadySeen;
+
+        $accepted = $result['accepted'];
 
         if ($accepted === []) {
             $state->save();
 
-            TOOLS::$log->info(sprintf(
-                'Принято 0. Уже приходивших: %d, старых по дате: %d, без даты: %d',
-                $alreadySeen,
-                $skippedOld,
-                $skippedNoDate
-            ), __METHOD__);
+            TOOLS::$log->info(AutoriaListingsSelection::summary($result), __METHOD__);
 
             return 0;
         }
@@ -131,24 +116,17 @@ class AutoriaListingsSlice
         // наоборот - потеряли бы и файл, и память о проверке
         $state->save();
 
-        TOOLS::$log->info(sprintf(
-            'Принято %d, уже приходивших %d, старых по дате %d, без даты %d, '
-            . 'без доступного телефона %d. Файл: %s',
-            count($accepted),
-            $alreadySeen,
-            $skippedOld,
-            $skippedNoDate,
-            $noCallablePhone,
-            $saved
-        ), __METHOD__, true);
+        TOOLS::$log->info(
+            AutoriaListingsSelection::summary($result) . '. Файл: ' . $saved,
+            __METHOD__,
+            true
+        );
 
-        if ($noCallablePhone > 0) {
-            TOOLS::$log->warn(
-                "У $noCallablePhone объявлений нет телефона, по которому можно "
-                . 'позвонить: auto.ria отдаёт номер после клика по кнопке. '
-                . 'В колонке phone_masked лежит то, что видно до клика',
-                __METHOD__,
-                true
+        if ($result['withoutCallablePhone'] > 0) {
+            TOOLS::$log->info(
+                "У {$result['withoutCallablePhone']} объявлений нет телефона - сбор "
+                . 'номеров выключен настройкой $collectPhones (условия доски)',
+                __METHOD__
             );
         }
 

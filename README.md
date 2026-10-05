@@ -48,14 +48,15 @@ collection for every other filter.
 ```
 robot/
   run.php                    entry point: config block + TOOLS::$robot->run()
-  tools/Robot.php            configure() -> schedule -> calls the slice -> report
+  tools/Robot.php            configure() -> schedule -> walks the tasks
   tools/slices/autoria_listings/
-    AutoriaListingsSlice.php     wires it together: collect, filter, write
+    AutoriaListingsSlice.php     wires it together: collect, pick, write
     AutoriaListingsScraper.php   reads the pages, knows the locators
+    AutoriaListingsSelection.php what goes in the report - no browser
     AutoriaListingsSink.php      writes the table, knows only the port
-    AutoriaListingItem.php       one ad: price, mileage, VIN, seller, phones
+    AutoriaListingItem.php       one ad: price, mileage, VIN, seller
     AutoriaListingsVehicleData.php  JSON-LD -> fields, no browser involved
-    AutoriaListingsPhoneReveal.php  click the mask, read the number from the popup
+    AutoriaListingsPhoneReveal.php  click the mask, read the number (off)
     AutoriaListingsState.php     which ads were already reported
     BoardRules.php               pure rules: phone, dates, escaping
   tools/slices/schedule_setup/
@@ -68,8 +69,10 @@ robot/
 
 The split follows the vendor's rules: a scraper does not format rows, a sink
 does not parse HTML, and the slice only wires them. `BoardRules.php`,
-`AutoriaListingsVehicleData.php` and `ScheduleIntervals.php` hold no browser
-calls at all, which is why they are testable.
+`AutoriaListingsVehicleData.php`, `AutoriaListingsSelection.php` and
+`ScheduleIntervals.php` hold no browser calls at all, which is why they are
+testable — including the decision about what the buyer actually gets, which
+used to sit inside the browser loop and was covered by nothing.
 
 ## What auto.ria actually serves
 
@@ -149,11 +152,11 @@ No CI, all local:
 php robot/tests/tests.php
 ```
 
-216 checks. Phone normalization, `8` → `7` conversion, date comparison, ad
+279 checks. Phone normalization, `8` → `7` conversion, date comparison, ad
 de-duplication, HTML/CSV escaping, which links count as ads, JSON-LD parsing
-against real markup, interval-to-scheduler mapping, and a full write of the
-result file through the vendor writer — objects → writer → file, parsed back
-and checked. No Studio and no browser needed.
+against real markup, what the report accepts and rejects, interval mapping,
+and a full write of the result file through the vendor writer — objects →
+writer → file, parsed back and checked. No Studio and no browser needed.
 
 These checks are not decoration. They are the rules ported from the C# version,
 where they had already caught two real bugs — `GetTypeByUrl(null)` throwing on

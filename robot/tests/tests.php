@@ -17,6 +17,8 @@ require_once __DIR__ . '/../tools/slices/autoria_listings/AutoriaListingItem.php
 require_once __DIR__ . '/../tools/slices/autoria_listings/AutoriaListingsScraper.php';
 require_once __DIR__ . '/../tools/slices/autoria_listings/AutoriaListingsVehicleData.php';
 require_once __DIR__ . '/../tools/slices/autoria_listings/AutoriaListingsSink.php';
+require_once __DIR__ . '/../tools/slices/autoria_listings/AutoriaListingsState.php';
+require_once __DIR__ . '/../tools/slices/autoria_listings/AutoriaListingsSelection.php';
 require_once __DIR__ . '/../tools/slices/schedule_setup/ScheduleIntervals.php';
 require_once __DIR__ . '/RealPageFixture.php';
 
@@ -357,6 +359,122 @@ $comment = $pos === false ? '' : substr($runPhp, max(0, $pos - 1600), 1600);
 check('у настройки есть предупреждение', str_contains($comment, '1.21'), true);
 check('предупреждение упоминает письменное согласие',
     str_contains($comment, 'письменного') || str_contains($comment, 'письменное'), true);
+
+// --- Отбор объявлений: что попадёт в отчёт ----------------------------------------
+//
+// Это и есть продукт: покупатель платит за то, что сюда попало. Пока
+// решение жило вперемешку с навигацией по браузеру, оно не было покрыто
+// ни одной проверкой. AutoriaListingsState ходит в фай��, но не в браузер,
+// поэтому отбор проверяется целиком.
+
+$selDir = sys_get_temp_dir() . '/board-robot-sel-' . getmypid();
+@mkdir($selDir, 0777, true);
+
+$mkItem = static fn (string $path, string $posted = '', string $phone = '')
+    => new AutoriaListingItem('https://auto.ria.com' . $path, 'BMW X5', 100, 'USD', 1000,
+        'kiev', 'BMW', 'X5', 2020, 'VIN1', 'Кроссовер', 'Черный', 'Бензин', 'Автомат',
+        '', $phone, 'Продавец', $posted);
+
+// --- первый запуск: всё новое -------------------------------------------------
+
+$state = new AutoriaListingsState($selDir . '/state.json');
+$items = [
+    $mkItem('/auto_bmw_x5_1.html'),
+    $mkItem('/auto_bmw_x5_2.html'),
+    $mkItem('/auto_bmw_x5_3.html'),
+];
+
+$r = AutoriaListingsSelection::pick($items, $state, '2026-10-01', true);
+check('первый запуск принял все три', count($r['accepted']), 3);
+check('уже приходивших ноль', $r['skippedAlreadySeen'], 0);
+check('старых по дате ноль', $r['skippedOld'], 0);
+check('без даты три', $r['skippedNoDate'], 3);
+check('состояние запомнило все три', count($state->state()['seen']), 3);
+
+// --- второй запуск: то же самое показывать нельзя -----------------------------
+
+$r2 = AutoriaListingsSelection::pick($items, $state, '2026-10-01', true);
+check('второй запуск не принял ничего', count($r2['accepted']), 0);
+check('все три отсеяны как уже приходившие', $r2['skippedAlreadySeen'], 3);
+check('пропущено старых по дате', $r2['skippedOld'], 0);
+
+// --- то же объявление под другим адресом --------------------------------------
+// метки в ссылке не должны пробивать дедупликацию
+
+$r3 = AutoriaListingsSelection::pick(
+    [$mkItem('/auto_bmw_x5_1.html?utm_source=board')],
+    $state,
+    '2026-10-01',
+    true
+);
+check('объявление с метками не считается новым', count($r3['accepted']), 0);
+
+// --- действительно новое объявление проходит ----------------------------------
+
+$r4 = AutoriaListingsSelection::pick(
+    [$mkItem('/auto_bmw_x5_4.html')],
+    $state,
+    '2026-10-01',
+    true
+);
+check('новое объявление принято', count($r4['accepted']), 1);
+
+// --- фильтр по дате, когда доска её отдаёт -----------------------------------
+
+$state2 = new AutoriaListingsState($selDir . '/state2.json');
+$dated = [
+    $mkItem('/auto_bmw_x5_old.html', '2026-09-01'),   // старше задачи
+    $mkItem('/auto_bmw_x5_new.html', '2026-10-05'),   // новее
+    $mkItem('/auto_bmw_x5_none.html', ''),           // даты нет
+];
+$r5 = AutoriaListingsSelection::pick($dated, $state2, '2026-10-01', true);
+
+$urls = array_map(static fn ($i) => $i->url, $r5['accepted']);
+check('старый отсеян, новый и без даты прошли', count($r5['accepted']), 2);
+check('старый в счётчике', $r5['skippedOld'], 1);
+check('без даты в счётчике', $r5['skippedNoDate'], 1);
+check('новое на месте', in_array('https://auto.ria.com/auto_bmw_x5_new.html', $urls, true), true);
+check('без даты на месте', in_array('https://auto.ria.com/auto_bmw_x5_none.html', $urls, true), true);
+check('старого в отчёте нет', in_array('https://auto.ria.com/auto_bmw_x5_old.html', $urls, true), false);
+
+// выключенный фильтр пропускает всё
+$state3 = new AutoriaListingsState($selDir . '/state3.json');
+$r6 = AutoriaListingsSelection::pick($dated, $state3, '2026-10-01', false);
+check('без фильтра по дате принято всё', count($r6['accepted']), 3);
+check('без фильтра никто не отсеян по дате', $r6['skippedOld'], 0);
+check('без фильтра счётчик «без даты» пуст', $r6['skippedNoDate'], 0);
+
+// --- пустой результат ----------------------------------------------------------
+
+$state4 = new AutoriaListingsState($selDir . '/state4.json');
+$r7 = AutoriaListingsSelection::pick([], $state4, '2026-10-01', true);
+check('пустой список даёт пустой отчёт', count($r7['accepted']), 0);
+
+// --- счётчик телефона -----------------------------------------------------------
+
+$state5 = new AutoriaListingsState($selDir . '/state5.json');
+$r8 = AutoriaListingsSelection::pick(
+    [$mkItem('/auto_bmw_x5_1.html'), $mkItem('/auto_bmw_x5_2.html', '', '8 (912) 345-67-89')],
+    $state5,
+    '2026-10-01',
+    true
+);
+check('посчитан объявлений без телефона', $r8['withoutCallablePhone'], 1);
+check('приняты оба', count($r8['accepted']), 2);
+
+// --- строка счётчиков для лога -------------------------------------------------
+
+$summary = AutoriaListingsSelection::summary($r8);
+check('в сводке есть количество принятых', str_contains($summary, 'Принято 2'), true);
+check('в сводке есть счётчик без телефона', str_contains($summary, 'без доступного телефона 1'), true);
+check('сводка без принятых', str_contains(AutoriaListingsSelection::summary($r7), 'Принято 0'), true);
+
+// --- пустой отчёт не должен затирать прошлый файл ------------------------------
+// это проверяется по решению слайса писать файл только при непустом
+// результате; сам счётчик уже выше
+
+foreach (glob($selDir . '/*') ?: [] as $f) { @unlink($f); }
+@rmdir($selDir);
 
 // --- Интервалы и планировщик --------------------------------------------------------
 //
