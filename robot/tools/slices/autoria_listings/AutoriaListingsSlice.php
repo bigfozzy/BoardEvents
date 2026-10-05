@@ -35,6 +35,7 @@ class AutoriaListingsSlice
      * @param bool $collectPhones Раскрывать ли телефон. По умолчанию НЕТ -
      *   условия RIA запрещают автоматический сбор номеров (п. 1.21 оферты),
      *   см. AutoriaListingsPhoneReveal
+     * @param int $pages Сколько страниц выдачи обойти
      * @return int сколько объявлений попало в файл
      */
     public static function run(
@@ -44,7 +45,8 @@ class AutoriaListingsSlice
         bool $onlyNew = true,
         int $limit = 100,
         string $stateDir = '',
-        bool $collectPhones = false
+        bool $collectPhones = false,
+        int $pages = 1
     ): int {
         if ($stateDir === '') {
             $stateDir = dirname($filePath);
@@ -60,7 +62,7 @@ class AutoriaListingsSlice
         $state->prune();
 
         $scraper = new AutoriaListingsScraper();
-        $candidates = $scraper->harvestList($listUrl, $limit);
+        $candidates = $scraper->harvestList($listUrl, $limit, $pages);
 
         if ($candidates === []) {
             TOOLS::$log->warn(

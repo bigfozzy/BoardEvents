@@ -287,10 +287,11 @@ class Robot
      */
     private function runBoard(array $board, string $name, string $url): int
     {
-        global $autoriaLimit, $dataFolderPath, $collectPhones;
+        global $autoriaLimit, $dataFolderPath, $collectPhones, $autoriaPages;
 
         $onlyNew = array_key_exists('onlyNew', $board) ? (bool)$board['onlyNew'] : true;
         $limit = isset($board['limit']) ? (int)$board['limit'] : (int)$autoriaLimit;
+        $pages = isset($board['pages']) ? (int)$board['pages'] : (int)$autoriaPages;
         $filePath = trim((string)($board['file'] ?? ''));
 
         // файл не задали - делаем имя из названия задачи, чтобы два
@@ -306,7 +307,8 @@ class Robot
             $onlyNew,
             $limit,
             $dataFolderPath,
-            (bool)$collectPhones
+            (bool)$collectPhones,
+            $pages
         );
     }
 

@@ -340,6 +340,45 @@ foreach ($fileNames as $fileName) {
     check("имя '$fileName' не длиннее 100", mb_strlen($fileName) <= 100, true);
 }
 
+// --- Страницы выдачи ----------------------------------------------------------------
+
+// У auto.ria нет сортировки по новизне, поэтому робот обязан смотреть
+// больше одной страницы: иначе новое объявление просто не попадёт в
+// первую двадцатку. Адрес страницы строится чисто, это и проверяем.
+
+check('первая страница не меняет адрес',
+    AutoriaListingsScraper::pageUrl('https://auto.ria.com/car/bmw', 1), 'https://auto.ria.com/car/bmw');
+check('вторая страница добавляет параметр',
+    AutoriaListingsScraper::pageUrl('https://auto.ria.com/car/bmw', 2), 'https://auto.ria.com/car/bmw?page=2');
+check('третья страница', AutoriaListingsScraper::pageUrl('https://auto.ria.com/car/bmw', 3), 'https://auto.ria.com/car/bmw?page=3');
+
+// самое важное: фильтры покупателя должны уцелеть. Покупатель копирует
+// адрес с фильтрами, и потеря query молча расширила бы выборку
+check('фильтры не теряются',
+    AutoriaListingsScraper::pageUrl('https://auto.ria.com/car/bmw?currency=UAH', 2),
+    'https://auto.ria.com/car/bmw?currency=UAH&page=2');
+check('несколько фильтров не теряются',
+    AutoriaListingsScraper::pageUrl('https://auto.ria.com/car/used/?currency=UAH&pricefrom=1000', 3),
+    'https://auto.ria.com/car/used/?currency=UAH&pricefrom=1000&page=3');
+
+// если покупатель уже поставил page в скопированном адресе, он
+// заменяется, а не добавляется вторым: ?page=5&page=2 - неопределённость
+check('номер страницы заменяется',
+    AutoriaListingsScraper::pageUrl('https://auto.ria.com/car/bmw?page=5', 2), 'https://auto.ria.com/car/bmw?page=2');
+check('замена сохраняет другие фильтры',
+    AutoriaListingsScraper::pageUrl('https://auto.ria.com/car/bmw?currency=UAH&page=5', 3),
+    'https://auto.ria.com/car/bmw?currency=UAH&page=3');
+check('после замены параметр один',
+    substr_count(AutoriaListingsScraper::pageUrl('https://auto.ria.com/car/bmw?page=5', 2), 'page='), 1);
+
+// в настройках должно быть больше одной страницы по умолчанию,
+// иначе робот вернётся к пропуску новых объявлений
+$runPhp = file_get_contents(__DIR__ . '/../run.php');
+check('в run.php задано обход страниц',
+    preg_match('/^\$autoriaPages\s*=\s*\d+\s*;/m', $runPhp) === 1, true);
+check('страниц по умолчанию больше одной',
+    preg_match('/^\$autoriaPages\s*=\s*([2-9]\d*)\s*;/m', $runPhp) === 1, true);
+
 // --- Сбор телефонов: по умолчанию выключен -----------------------------------------
 //
 // Условия RIA (п. 1.21 оферты) прямо запрещают автоматический сбор

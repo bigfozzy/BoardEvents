@@ -51,15 +51,102 @@ class AutoriaListingsScraper
     }
 
     /**
+     * Назначение номера страницы в адрес выдачи.
+     *
+     * Проверено на живой доске: страницы через ?page=N не пересекаются,
+     * на каждой по 20 объявлений, всего 10 страниц.
+     *
+     * Номер добавляется к уже существующим параметрам, а не затирает их:
+     * покупатель часто копирует адрес с фильтрами (?currency=UAH и
+     * подобными), и потеря фильтров молча扩大ила бы выборку.
+     *
+     * @param string $listUrl Адрес выдачи
+     * @param int $page Номер страницы, начиная с 1
+     */
+    public static function pageUrl(string $listUrl, int $page): string
+    {
+        if ($page <= 1) {
+            return $listUrl;
+        }
+
+        // Если покупатель уже поставил page в скопированном адресе,
+        // параметр заменяем, а не добавляем второй: ?page=5&page=2 -
+        // это неопределённость, и доска может взять не тот.
+        $pattern = '/([?&])page=\d*/';
+
+        if (preg_match($pattern, $listUrl)) {
+            return (string)preg_replace($pattern, '$1page=' . $page, $listUrl, 1);
+        }
+
+        $separator = str_contains($listUrl, '?') ? '&' : '?';
+
+        return $listUrl . $separator . 'page=' . $page;
+    }
+
+    /**
      * На странице выдачи.
      *
+     * Обходит $pages страниц подряд. Это не перестраховка, а
+     * необходимость: доска НЕ сортирует выдачу по дате, и на марке
+     * /car/bmw порядок произвольный. Читая только первую страницу,
+     * робот пропускал бы новые объявления - и пропуск выглядел бы как
+     * «новых объявлений нет». Сортировки по новизне у доски нет вовсе:
+     * в разметке нет ни sort_by, ни переключателя порядка, только
+     * фильтры (Все / Б/у / Новые / Под пригон).
+     *
+     * Постоянные затраты на пагинацию невелики: объявления, которые
+     * уже отдавали, не открываются повторно благодаря файлу состояния, так
+     * что каждый запуск платит только за загрузку страниц выдачи.
+     *
      * @param string $listUrl Адрес выдачи с уже применёнными фильтрами
-     * @param int $limit Сколько максимум взять
+     * @param int $limit Сколько максимум объявлений взять со всех страниц
+     * @param int $pages Сколько страниц обойти, начиная с первой
      * @return AutoriaListingItem[] карточки без деталей
      */
-    public function harvestList(string $listUrl, int $limit = 100): array
+    public function harvestList(string $listUrl, int $limit = 100, int $pages = 1): array
     {
-        WEB::$browser->navigate($listUrl);
+        $pages = $pages > 0 ? $pages : 1;
+        $items = [];
+        $totalSeen = 0;
+        $stopped = false;
+
+        for ($page = 1; $page <= $pages && !$stopped; $page++) {
+            $pageItems = $this->harvestPage(self::pageUrl($listUrl, $page), $limit - count($items));
+
+            $totalSeen += count($pageItems);
+
+            foreach ($pageItems as $item) {
+                // по ключу, а не по позиции: одна и та же машина может
+                // попасть на соседние страницы
+                $items[$item->key()] = $item;
+            }
+
+            // страница пустая или выбрано всё нужное - дальше идти незачем
+            if ($pageItems === [] || count($items) >= $limit) {
+                $stopped = true;
+            }
+        }
+
+        TOOLS::$log->info(sprintf(
+            'auto.ria: страниц обойдено %d, адресов собрано %d, взято %d',
+            $stopped ? $page : ($page - 1),
+            $totalSeen,
+            count($items)
+        ), __METHOD__);
+
+        return array_slice(array_values($items), 0, $limit);
+    }
+
+    /**
+     * Одна страница выдачи.
+     *
+     * @param string $url Адрес страницы
+     * @param int $limit Сколько максимум взять
+     * @return AutoriaListingItem[]
+     */
+    private function harvestPage(string $url, int $limit): array
+    {
+        WEB::$browser->navigate($url);
         // список подрисовывается скриптом: без паузы выдача пустая
         WEB::$browser->wait_js();
 
@@ -67,11 +154,8 @@ class AutoriaListingsScraper
         $count = $found->count();
 
         if ($count === 0) {
-            TOOLS::$log->warn(
-                "Карточек с классом '" . self::CARD_CLASS . "' не найдено на $listUrl - "
-                . 'проверьте локатор: разметка доски изменилась',
-                __METHOD__
-            );
+            // пустая страница - это не ошибка, а конец выдачи
+            TOOLS::$log->debug('Карточек на странице нет: ' . $url, __METHOD__);
             return [];
         }
 
@@ -96,17 +180,17 @@ class AutoriaListingsScraper
                 continue;
             }
 
-            $url = self::absoluteUrl($listUrl, $href);
+            $abs = self::absoluteUrl($url, $href);
 
-            $items[$url] = new AutoriaListingItem($url);
+            $items[$abs] = new AutoriaListingItem($abs);
         }
 
-        TOOLS::$log->info(sprintf(
-            'auto.ria: карточек %d, взято %d, служебных ссылок пропущено %d',
-            $count,
-            count($items),
-            $skippedNav
-        ), __METHOD__);
+        if ($skippedNav > 0) {
+            TOOLS::$log->debug(
+                "Пропущено служебных ссылок на странице: $skippedNav",
+                __METHOD__
+            );
+        }
 
         return array_values($items);
     }

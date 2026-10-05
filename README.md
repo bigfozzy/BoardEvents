@@ -115,6 +115,15 @@ So:
   by the board's date. That is more accurate anyway — the C# version lost ads
   silently on exactly this field.
 
+**And there is no sort by date either.** The board offers no ordering control
+at all: no `sort_by`, no ordering switch — only filters (Все / Б/у / Новые /
+Под пригон). On a make page like `/car/bmw` the order is whatever the board
+chose. Reading only the first page therefore means missing new ads, and the
+miss looks like "no new ads". So the robot walks several pages: `$autoriaPages`
+in `run.php`, 3 by default, 20 ads per page, verified as 60 distinct ads over
+3 pages. This costs little in steady state, because ads already reported are
+not opened again — each run pays only for loading the list pages.
+
 If the reveal ever stops working, `phone_masked` still shows what the board
 displayed, and the log says the number was not released — it never silently
 leaves the column empty, which would look like "this ad has no phone".
