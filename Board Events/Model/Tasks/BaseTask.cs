@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using Quartz;
 using System.Threading;
 using XHE._Helper.Tools.GUI;
+using XHE._Helper.Tools.Log;
 using XHE._Helper.Tools.Web;
 
 namespace Board_Events
@@ -65,8 +66,17 @@ namespace Board_Events
 
         /// <summary>
         /// результаты выполнения задачи
+        ///
+        /// Список пишется из рабочих потоков (BaseTask.Check -> AddVariant)
+        /// и читается из UI-потока (RefreshVariantsList). Все обращения
+        /// должны идти под variantsLock, а для обхода - через GetVariants().
         /// </summary>
         public List<TaskVariant> Variants { get; set; }
+
+        /// <summary>
+        /// лок на список вариантов
+        /// </summary>
+        readonly object variantsLock = new object();
 
         #endregion
 
@@ -516,17 +526,26 @@ namespace Board_Events
         /// </summary>
         /// <param name="content"></param>
         /// <returns></returns>
-        public virtual List<TaskVariant> ParseVariants(XHEScriptMulti script)
+public virtual List<TaskVariant> ParseVariants(XHEScriptMulti script)
         {
-            // новые вараинты
-            List<TaskVariant> newVariants = new List<TaskVariant>();
-            ShowMessage.ShowInfoMessage("для правильной работы надо переопределить в дочернем классе");
-            return newVariants;
+            // базовый класс ничего не умеет - сразу сообщаем в лог,
+            // из рабочего потока ShowMessage вешает приложение
+            if (onTaskCheckProgressLog!=null)
+                onTaskCheckProgressLog.Invoke(this, "ошибка: разбор страницы не реализован в базовом классе");
+            else
+                LogTools.LogEvent("разбор страницы не реализован в базовом классе");
+
+            return new List<TaskVariant>();
         }
         // разобрать телефон варианта
         public virtual bool ParseVariantPhone(TaskVariant variant, XHEScriptMulti script)
         {
-            ShowMessage.ShowInfoMessage("для правильной работы надо переопределить в дочернем классе");
+            // см. ParseVariants - сообщение в лог, а не в диалог из потока
+            if (onTaskCheckProgressLog!=null)
+                onTaskCheckProgressLog.Invoke(this, "ошибка: разбор телефона не реализован в базовом классе");
+            else
+                LogTools.LogEvent("разбор телефона не реализован в базовом классе");
+
             return false;
         }
 
@@ -540,7 +559,7 @@ namespace Board_Events
         /// <param name="scheduler"></param>
         public int VariantsAllRequestCallNow(IScheduler scheduler)
         {
-            return RequestCallByVariants(Variants, scheduler);
+            return RequestCallByVariants(GetVariants(), scheduler);
         }
 
         /// <summary>
@@ -576,8 +595,35 @@ namespace Board_Events
         /// <returns></returns>
         public int GetVariantsCount()
         {
-            // нашли
-            return Variants.Count;
+            lock (variantsLock)
+            {
+                return (Variants != null) ? Variants.Count : 0;
+            }
+        }
+
+        /// <summary>
+        /// получить снимок списка вариантов - безопасно обходить из UI-потока,
+        /// пока рабочий поток добавляет новые
+        /// </summary>
+        /// <returns></returns>
+        public List<TaskVariant> GetVariants()
+        {
+            lock (variantsLock)
+            {
+                return (Variants != null) ? new List<TaskVariant>(Variants) : new List<TaskVariant>();
+            }
+        }
+
+        /// <summary>
+        /// заменить список вариантов целиком (десериализация)
+        /// </summary>
+        /// <param name="variants"></param>
+        public void SetVariants(List<TaskVariant> variants)
+        {
+            lock (variantsLock)
+            {
+                Variants = (variants != null) ? new List<TaskVariant>(variants) : new List<TaskVariant>();
+            }
         }
 
         /// <summary>
@@ -587,12 +633,14 @@ namespace Board_Events
         /// <returns></returns>
         public TaskVariant GetVariant(int index)
         {
-            // не нашли - включая отрицательный индекс
-            if (index < 0 || index >= Variants.Count)
-                return null;
+            lock (variantsLock)
+            {
+                // не нашли - включая отрицательный индекс
+                if (Variants == null || index < 0 || index >= Variants.Count)
+                    return null;
 
-            // нашли
-            return Variants[index];
+                return Variants[index];
+            }
         }
 
         /// <summary>
@@ -602,12 +650,18 @@ namespace Board_Events
         /// <returns></returns>
         public TaskVariant GetVariant(string url)
         {
-            // сделаем поиск
-            for (int i = 0; i < Variants.Count; i++)
-                if (Variants[i].Url == url)
-                    return Variants[i];
+            lock (variantsLock)
+            {
+                if (Variants == null)
+                    return null;
 
-            return null;
+                // сделаем поиск
+                for (int i = 0; i < Variants.Count; i++)
+                    if (Variants[i].Url == url)
+                        return Variants[i];
+
+                return null;
+            }
         }
 
         /// <summary>
@@ -616,9 +670,9 @@ namespace Board_Events
         /// <returns></returns>
         public TaskVariant CreateVariant(string url)
         {
-            // проверим что такой есть
-            if (GetVariant(url) != null)
-                throw new Exception("такой вариант уже есть");
+            // пустой или не абсолютный адрес - результат все равно не откроется
+            if (string.IsNullOrEmpty(url) || !url.StartsWith("http"))
+                throw new Exception("адрес варианта должен начинаться с http");
 
             // вариант не совпадает
             if (GetTypeByUrl(url) != Type)
@@ -641,8 +695,15 @@ namespace Board_Events
             if (variant == null)
                 return null;
 
-            // добавим            
-            Variants.Add(variant);
+            lock (variantsLock)
+            {
+                // такой уже мог добавить другой поток
+                if (GetVariant(url) != null)
+                    throw new Exception("такой вариант уже есть");
+
+                // добавим
+                Variants.Add(variant);
+            }
 
             // задача изменилась
             if (notifyDelegete)
@@ -661,15 +722,24 @@ namespace Board_Events
             if (variant == null)
                 return false;
 
-            // проверим что вариант новеве заадчи
-            if (OnlyNew)
+            lock (variantsLock)
             {
-                if (variant.PostedDate.Date < CreateDate.Date)
+                // такой уже мог добавить другой поток
+                if (GetVariant(variant.Url) != null)
                     return false;
-            }
 
-            // добавим            
-            Variants.Add(variant);
+                // проверим что вариант новеве заадчи
+                // если дату не удалось распарсить - PostedDate пустой, и такой
+                // вариант отсекался как старый; считаем его новым
+                if (OnlyNew && variant.PostedDate != DateTime.MinValue)
+                {
+                    if (variant.PostedDate.Date < CreateDate.Date)
+                        return false;
+                }
+
+                // добавим
+                Variants.Add(variant);
+            }
 
             // задача изменилась
             if (notifyDelegete)
@@ -689,8 +759,12 @@ namespace Board_Events
             if (variant == null)
                 return false;
 
-            // удалим
-            Variants.Remove(variant);
+            lock (variantsLock)
+            {
+                // такого уже нет
+                if (Variants == null || !Variants.Remove(variant))
+                    return false;
+            }
 
             // задача изменилась
             OnTaskUpdated();
@@ -704,12 +778,15 @@ namespace Board_Events
         /// <returns></returns>
         public bool DeleteAllVariants()
         {
-            // нет вариантов
-            if (GetVariantsCount() == 0)
-                return false;
+            lock (variantsLock)
+            {
+                // нет вариантов
+                if (Variants == null || Variants.Count == 0)
+                    return false;
 
-            // удалим все
-            Variants.Clear();
+                // удалим все
+                Variants.Clear();
+            }
 
             // задача изменилась
             OnTaskUpdated();
@@ -794,18 +871,21 @@ namespace Board_Events
         /// <returns></returns>
         public bool ExportAllVariansToExcel(string path,bool show)
         {
+            // снимок - экспорт не должен ехать по списку, который меняет поток
+            List<TaskVariant> variants = GetVariants();
+
             // нет вариантов
-            if (Variants.Count == 0)
+            if (variants.Count == 0)
                 return false;
 
             // разделитель строк
             string separator = "\r\n";
 
             // создадим таблицу
-            string str= Variants[0].GetCsvTitle() + separator;
+            string str= variants[0].GetCsvTitle() + separator;
             // получим строки всех вариантов
-            for (int i = 0; i < Variants.Count; i++)
-                str += Variants[i].GetCsvString()+separator;
+            for (int i = 0; i < variants.Count; i++)
+                str += variants[i].GetCsvString()+separator;
 
             // добавим срасширение если надо
             if (FileTools.GetFileExtension(path) == "")
@@ -826,7 +906,7 @@ namespace Board_Events
         /// <returns></returns>
         public bool EMailAllVariantsTo(string mailTo)
         {
-            return EMailVariantsTo(Variants, "Все варианты по Задаче : " + Name, mailTo);
+            return EMailVariantsTo(GetVariants(), "Все варианты по Задаче : " + Name, mailTo);
         }
 
         /// <summary>

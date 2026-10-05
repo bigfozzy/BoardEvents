@@ -383,10 +383,16 @@ namespace Board_Events.Model.Results
         /// <returns></returns>
         public bool RequestCallNow(BaseTask task,IScheduler scheduler,bool OnlyNew=false)
         {
+            // задачи нет - заказывать нечего
+            if (task == null)
+                return false;
+
             // проверим что вариант новеве заадчи
-            if (OnlyNew)
+            // если дату не удалось распарсить - PostedDate пустой, и такой
+            // вариант отсекался как старый; считаем его новым
+            if (OnlyNew && PostedDate != DateTime.MinValue)
             {
-                if (PostedDate < task.CreateDate)
+                if (PostedDate.Date < task.CreateDate.Date)
                     return false;
             }
             // плохой телефон
@@ -405,14 +411,13 @@ namespace Board_Events.Model.Results
                 .WithIdentity(variantJobRequestCallName, "scheduling")
                 .Build();
 
-            // тригер - запустить сейчас
+            // триггер - запустить сейчас
             ITrigger trigger = TriggerBuilder.Create()
                     .WithIdentity("SchedulingTrigger" + Url + shedulerVariantCounter.ToString(), "scheduling")
                     .StartNow()
                     .Build();
 
             // укажем задачу - как данные работы
-            IDictionary<string, object> data = new Dictionary<string, object>();
             job.JobDataMap.Add("Data#1", task);
             job.JobDataMap.Add("Data#2", this);
 
@@ -420,11 +425,15 @@ namespace Board_Events.Model.Results
             try
             {
                 scheduler.ScheduleJob(job, trigger);
+                return true;
             }
             catch (Exception)
             {
+                // звонок не встал в очередь - сбрасываем флаг, иначе
+                // кнопка звонка останется заблокированной навсегда
+                IsRequestCallNow = false;
+                return false;
             }
-            return true;
         }
 
         /// <summary>
@@ -616,7 +625,6 @@ namespace Board_Events.Model.Results
                     .Build();
 
             // укажем задачу - как данные работы
-            IDictionary<string, object> data = new Dictionary<string, object>();
             job.JobDataMap.Add("Data#1", task);
             job.JobDataMap.Add("Data#2", this);
 
@@ -624,11 +632,14 @@ namespace Board_Events.Model.Results
             try
             {
                 scheduler.ScheduleJob(job, trigger);
+                return true;
             }
             catch (Exception)
             {
+                // проверка не встала в очередь - сбрасываем флаг
+                IsCheckNow = false;
+                return false;
             }
-            return true;
         }
 
         /// <summary>

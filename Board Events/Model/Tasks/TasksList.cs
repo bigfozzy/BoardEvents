@@ -120,25 +120,30 @@ namespace Board_Events.Model.Tasks
         /// <returns></returns>
         public int AddTask(BaseTask task)
         {
+            if (task == null)
+                return -2;
+
             // добавим задачу не посылая событие что на создана
             int iRes=AddTask(task.Url, task.Name, task.TimeCheck,false);
             if (iRes>0)
             {
-                // данные проверок задачи
-                tasks[tasks.Count - 1].CreateDate = task.CreateDate;
-                tasks[tasks.Count - 1].CheckCount = task.CheckCount;
-                tasks[tasks.Count - 1].LastCheckDate = task.LastCheckDate;
-                tasks[tasks.Count - 1].EnableMailNotification = task.EnableMailNotification;
-                tasks[tasks.Count - 1].EnableCallNotification = task.EnableCallNotification;
+                // последняя добавленная задача
+                BaseTask added = tasks[tasks.Count - 1];
 
-                // результаты
-                tasks[tasks.Count - 1].Variants = task.Variants;
-                if (task.Variants == null)
-                    tasks[tasks.Count - 1].Variants = new List<TaskVariant>();
+                // данные проверок задачи
+                added.CreateDate = task.CreateDate;
+                added.CheckCount = task.CheckCount;
+                added.LastCheckDate = task.LastCheckDate;
+                added.EnableMailNotification = task.EnableMailNotification;
+                added.EnableCallNotification = task.EnableCallNotification;
+
+                // результаты - через SetVariants, чтобы список задачи
+                // и список десериализованного объекта не оказались одним объектом
+                added.SetVariants(task.GetVariants());
 
                 // пошлем событие что задача добавлена - если такой делегат есть
                 if (onTaskAdded!=null)
-                    onTaskAdded.Invoke(tasks[tasks.Count - 1], tasks.Count - 1);
+                    onTaskAdded.Invoke(added, tasks.Count - 1);
             }
             return iRes;
         }

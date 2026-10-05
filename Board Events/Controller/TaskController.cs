@@ -104,20 +104,23 @@ namespace Board_Events.Controller
             lwVariants.Items.Clear();
             if (Task != null)
             {
-                for (int i = 0; i < Task.Variants.Count(); i++)
+                // снимок - обход не должен падать, пока рабочий поток добавляет варианты
+                List<TaskVariant> variants = Task.GetVariants();
+                for (int i = 0; i < variants.Count; i++)
                 {
                     // вариант
-                    ListViewItem item = lwVariants.Items.Add(Task.Variants[i].ReceiveDate.Date.ToString());
-                    item.ImageIndex = Task.Variants[i].IconIndex;
-                    item.Tag = Task.Variants[i];
+                    TaskVariant v = variants[i];
+                    ListViewItem item = lwVariants.Items.Add(v.ReceiveDate.Date.ToString());
+                    item.ImageIndex = v.IconIndex;
+                    item.Tag = v;
 
                     // столбцы
-                    item.SubItems.Add(Task.Variants[i].PostedDate.Date.ToString());
-                    item.SubItems.Add(Task.Variants[i].Url);
-                    item.SubItems.Add(Task.Variants[i].Phone);
-                    item.SubItems.Add(Task.Variants[i].Status);
-                    item.SubItems.Add(Task.Variants[i].Description);
-                    item.SubItems.Add(Task.Variants[i].Talk);
+                    item.SubItems.Add(v.PostedDate.Date.ToString());
+                    item.SubItems.Add(v.Url);
+                    item.SubItems.Add(v.Phone);
+                    item.SubItems.Add(v.Status);
+                    item.SubItems.Add(v.Description);
+                    item.SubItems.Add(v.Talk);
                 }
             }
             // конец обновления
@@ -294,7 +297,10 @@ namespace Board_Events.Controller
 
                 // обновим список вариантов
                 RefreshVariantsList();
+
+                // выделим добавленный - он последний
                 SetSelectedVariantIndex(lwVariants.Items.Count - 1);
+                SetVariant();
                 lwVariants.Focus();
             }
 
