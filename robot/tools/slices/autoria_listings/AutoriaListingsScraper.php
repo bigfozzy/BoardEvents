@@ -142,10 +142,18 @@ class AutoriaListingsScraper
             $filled->url = $item->url;
         }
 
-        if ($filled->hasPhoneMask() && !$filled->hasCallablePhone()) {
+        // Телефон в разметке замаскирован, поэтому берём его из окна,
+        // которое появляется после клика. Если не раскрылся - оставляем
+        // маску и пишем об этом: молча пустая колонка выглядит как
+        // «телефона нет», а на деле номер есть и просто не отдался.
+        $phone = (new AutoriaListingsPhoneReveal())->reveal();
+
+        if ($phone !== '') {
+            $filled->phone = $phone;
+        } elseif ($filled->hasPhoneMask()) {
             TOOLS::$log->info(
-                'Телефон на доске замаскирован (' . $filled->phoneMasked . '), '
-                . 'номер отдаётся после клика: ' . $filled->url,
+                'Телефон не раскрылся, остаётся маска (' . $filled->phoneMasked . '): '
+                . $filled->url,
                 __METHOD__
             );
         }

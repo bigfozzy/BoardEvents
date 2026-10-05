@@ -178,6 +178,62 @@ class BoardRules
     }
 
     /**
+     * Телефон, по которому реально можно позвонить.
+     */
+    public static function isValidPhone(?string $phone): bool
+    {
+        return $phone !== null && $phone !== '';
+    }
+
+    /**
+     * Вытащить номер из текста всплывающего окна.
+     *
+     * В окне после клика номер лежит отдельной строкой среди прочего:
+     *
+     *   BMW X3 2015
+     *   Продавець
+     *   Олександр Нікіша
+     *   (050) 689 98 28
+     *   Попросить продавца перезвонить
+     *
+     * Разбираем построчно, а не одним regex по всему тексту: иначе
+     * под номером может подставиться любое другое число - «406 отзывов»
+     * или год выпуска.
+     *
+     * Маска вида (XXX) XXX XX XX пропускается: по ней не позвонить.
+     * Если номер не нашёлся или он не наш/не на украине, возвращается ''.
+     */
+    public static function findPhoneInText(string $text): string
+    {
+        foreach (preg_split('/\R/u', $text) as $line) {
+            $line = trim($line);
+
+            if ($line === '' || str_contains($line, 'XXX')) {
+                continue;
+            }
+
+            // приводим «(050) 689 98 28» к виду «0506899828»
+            $digits = preg_replace('/\D/', '', $line);
+
+            // украинский номер - 10 цифр с кодом 0XX либо 12 с 380/38
+            $isUkrainian = $digits !== null && strlen($digits) === 10 && $digits[0] === '0';
+            $isWithCode = $digits !== null && strlen($digits) === 12 && str_starts_with($digits, '38');
+
+            if (!$isUkrainian && !$isWithCode) {
+                continue;
+            }
+
+            $phone = self::getNormedPhone($line);
+
+            if ($phone !== '') {
+                return $phone;
+            }
+        }
+
+        return '';
+    }
+
+    /**
      * Экранирование значения для CSV.
      *
      * Кавычки внутри значения удваиваются, иначе файл разъезжается.

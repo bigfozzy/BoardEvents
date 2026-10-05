@@ -42,6 +42,7 @@ robot/
     AutoriaListingsSink.php      writes the table, knows only the port
     AutoriaListingItem.php       one ad: price, mileage, VIN, seller, phones
     AutoriaListingsVehicleData.php  JSON-LD -> fields, no browser involved
+    AutoriaListingsPhoneReveal.php  click the mask, read the number from the popup
     AutoriaListingsState.php     which ads were already reported
     BoardRules.php               pure rules: phone, dates, escaping
   tools/slices/schedule_setup/
@@ -67,7 +68,7 @@ because it invalidated the old parser:
 | card class `mainlink` | `product-card`, with `data-car-id` |
 | ad URL contains `/car/` | ad URL is `/auto_<model>_<id>.html` — `/car/` is the catalog menu |
 | `class="address" href=` in raw text | JSON-LD `schema.org/Vehicle` on the ad page |
-| phone from `.phone-wrap` | masked: `(068) XXX XX XX` |
+| phone from `.phone-wrap` | masked in HTML; real number after a click, see below |
 | date from "Объявление добавлено …" | **not in the page at all** |
 
 So:
@@ -76,15 +77,31 @@ So:
   brand, model, year, VIN, mileage, body, colour, fuel, gearbox, doors, price
   and currency; the city comes from the breadcrumb block. JSON-LD is a declared
   markup contract, so cosmetic redesigns do not break it.
-- **The phone is masked.** The full number is fetched by a separate request
-  after clicking the phone block. The button is not in the HTML — the block is
-  assembled from a JSON config — so the robot does not click it. Hard-coding a
-  locator we have not seen is forbidden by the XHE rules, and such a click
-  would simply not work. Result rows carry `phone_masked` and the seller name
-  so you know the number exists.
+- **The phone is collected by clicking.** The mask lives in the initial HTML as
+  `"phone":{"content":"(068) XXX XX XX"}`, but the page is rendered on the
+  client, and in the rendered DOM the mask is a button:
+
+  ```html
+  <button class="size-large conversion" data-action="showBottomPopUp">
+    <span class="common-text ws-pre-wrap action">(068) XXX XX XX</span>
+  </button>
+  ```
+
+  Clicking it posts to `/bff/final-page/public/auto/popUp/` and shows a
+  `div.popup` with the real number. Verified on 8 live ads — 8 of 8 revealed,
+  dealers and private sellers alike, no login required.
+
+  The button is found by its mask text, not by class: there are two
+  `size-large conversion` buttons on the page (the other is "Понимаю и
+  разрешаю") and six `data-action="showBottomPopUp"` buttons, so neither
+  attribute identifies it on its own.
 - **There is no posted date**, so "only new" is decided by the state file, not
   by the board's date. That is more accurate anyway — the C# version lost ads
   silently on exactly this field.
+
+If the reveal ever stops working, `phone_masked` still shows what the board
+displayed, and the log says the number was not released — it never silently
+leaves the column empty, which would look like "this ad has no phone".
 
 `tests/RealPageFixture.php` holds markup lifted from the live pages. Whoever
 fixes the parser after the next redesign updates the fixture, and the tests fail
@@ -141,16 +158,18 @@ open it through Data → From Text with UTF-8.
 
 ## What is not finished
 
-- The phone cannot be collected automatically. See above — this is the open
-  product question, not a parsing oversight.
-- The scheduler registration is unverified against a running Studio; the
-  interval mapping and file writing are covered by tests, the API calls are not.
+- The reveal itself is verified through a real browser on 8 live ads, but the
+  XHE calls that drive it (`click()`, `get_all_by_class`, the popup wait) have
+  not been run inside Studio. The order of actions and the phone extraction are
+  verified; the transport is not.
 - Only auto.ria parses. `BoardRules` knows olx and rst, but no scraper exists
   yet — one slice per board.
 - OLX forbids scraping in its terms. Do not build a paid product on it.
 - Notification is not wired into the slice yet: the vendor mailer
   (`TOOLS::$mailer`) is available and configured in `run.php`, but new ads only
   reach the file.
+- The board's own conditions are unchecked for rst.ua, and unverified for
+  auto.ria. Read them before selling.
 
 # legacy-csharp/ — the archived desktop app
 
