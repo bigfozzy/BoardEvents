@@ -422,9 +422,12 @@ namespace Board_Events.Model.Results
             job.JobDataMap.Add("Data#2", this);
 
             // запустим задачу
+            // Quartz 3 вернул асинхронный API, но вызываем мы это из UI-потока,
+            // поэтому ждем здесь. ConfigureAwait(false) обязателен - иначе
+            // продолжение вернется в контекст UI и будет ждать сам себя
             try
             {
-                scheduler.ScheduleJob(job, trigger);
+                scheduler.ScheduleJob(job, trigger).ConfigureAwait(false).GetAwaiter().GetResult();
                 return true;
             }
             catch (Exception)
@@ -662,9 +665,12 @@ namespace Board_Events.Model.Results
             job.JobDataMap.Add("Data#2", this);
 
             // запустим задачу
+            // Quartz 3 вернул асинхронный API, но вызываем мы это из UI-потока,
+            // поэтому ждем здесь. ConfigureAwait(false) обязателен - иначе
+            // продолжение вернется в контекст UI и будет ждать сам себя
             try
             {
-                scheduler.ScheduleJob(job, trigger);
+                scheduler.ScheduleJob(job, trigger).ConfigureAwait(false).GetAwaiter().GetResult();
                 return true;
             }
             catch (Exception)

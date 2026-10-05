@@ -49,9 +49,18 @@ force-push выполнен. Не восстанавливать эти стро
 
 ## Известные осознанные долги
 
-- **Quartz 2.4.1** — не обновлён: в 3.x `IJob.Execute` возвращает `Task`,
-  нужна асинхронная перепись трёх классов потоков с синхронными блокировками.
-  GitHub показывает 1 high + 1 moderate по этим зависимостям.
+- **Quartz 3.8.0** — обновлён с 2.4.1 (октябрь 2026). Ключевые отличия:
+  - `IJob.Execute` возвращает `Task`. Тела задач оставлены синхронными,
+    `Execute` их запускает через `RunJobBody` (`BaseThreadWithXHE`) в
+    ThreadPool — иначе поток пула Quartz занят на все `Thread.Sleep`
+  - `IScheduler.ScheduleJob/DeleteJob/Shutdown/GetScheduler/Start`
+    асинхронные. Вызовы из UI-потока ждут через
+    `.ConfigureAwait(false).GetAwaiter().GetResult()` — без
+    `ConfigureAwait(false)` продолжение возвращается в контекст UI и
+    ждёт сам себя (дедлок)
+  - пул: `quartz.threadPool.type` = `Quartz.Simpl.DefaultThreadPool`,
+    `maxConcurrency` = 20 (в 3.x ключ не константа в исходниках фабрики,
+    но `PropertyThreadPoolPrefix` = `quartz.threadPool` — префикс верный)
 - **`wbIE`** (MSHTML `WebBrowser`) в `Main.Designer.cs` — IE-движок, вне поддержки.
   Используется для отображения вариантов с olx.ua. Замена на второй
   `ChromiumWebBrowser` или удаление с переходом на CEF для всех досок.

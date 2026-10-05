@@ -102,8 +102,10 @@ namespace Board_Events
             });
 
             // создадим и запустим шедулер
-            scheduler = schedulerFact.GetScheduler();
-            scheduler.Start();
+            // Quartz 3 вернул асинхронный GetScheduler/Start; вызываем из
+            // конструктора формы, блокировка здесь допустима
+            scheduler = schedulerFact.GetScheduler().ConfigureAwait(false).GetAwaiter().GetResult();
+            scheduler.Start().ConfigureAwait(false).GetAwaiter().GetResult();
         }
         /// <summary>
         /// инициализировать компоненты (стандартные и не очень)
@@ -260,7 +262,9 @@ namespace Board_Events
             // завершим шедулер
             try
             {
-                scheduler.Shutdown();
+                // Quartz 3 вернул асинхронный Shutdown; вызываем из UI-потока
+                // в FormClosed, где блокировка допустима
+                scheduler.Shutdown().ConfigureAwait(false).GetAwaiter().GetResult();
             }
             catch (Exception)
             {

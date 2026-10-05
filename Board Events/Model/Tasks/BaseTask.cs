@@ -329,9 +329,13 @@ namespace Board_Events
             }
 
             // запустим задачу
+            // Quartz 3 вернул асинхронный API, но вызываем мы это из UI-потока
+            // и из обработчиков, поэтому ждем здесь. ConfigureAwait(false)
+            // обязателен - иначе продолжение вернется в контекст UI и будет
+            // ждать сам себя
             try
             {
-                scheduler.ScheduleJob(job, trigger);
+                scheduler.ScheduleJob(job, trigger).ConfigureAwait(false).GetAwaiter().GetResult();
                 return true;
             }
             catch (Exception)
@@ -362,7 +366,9 @@ namespace Board_Events
 
             try
             {
-                return scheduler.DeleteJob(new JobKey(jobName, "scheduling"));
+                // см. комментарий про ConfigureAwait в StartScheduling
+                return scheduler.DeleteJob(new JobKey(jobName, "scheduling"))
+                    .ConfigureAwait(false).GetAwaiter().GetResult();
             }
             catch (Exception)
             {

@@ -65,7 +65,18 @@ namespace Board_Events.Threads
 
         #region выполнение
 
-        public void Execute(IJobExecutionContext context)
+        public Task Execute(IJobExecutionContext context)
+        {
+            // тело задачи синхронное и спит - выполняем его в ThreadPool,
+            // чтобы не держать поток пула Quartz
+            return RunJobBody(() => ExecuteJob(context));
+        }
+
+        /// <summary>
+        /// тело задачи
+        /// </summary>
+        /// <param name="context"></param>
+        void ExecuteJob(IJobExecutionContext context)
         {
             try
             {

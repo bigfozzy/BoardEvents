@@ -132,6 +132,21 @@ namespace Board_Events.Threads
             if (tbLog != null && !tbLog.IsDisposed)
                 tbLog.Invoke(new Action(() => { task.OnTaskUpdated(); }));
         }
+
+        /// <summary>
+        /// запустить тело задачи в фоновом потоке
+        ///
+        /// В Quartz 3 IJob.Execute возвращает Task и шедулер ждет его
+        /// завершения, удерживая поток пула. Тела наших задач синхронные
+        /// и спят по несколько секунд (Thread.Sleep, ожидание эмулятора),
+        /// поэтому выносим их в ThreadPool, а поток шедулера освобождаем.
+        /// </summary>
+        /// <param name="body">синхронное тело задачи</param>
+        /// <returns></returns>
+        protected static Task RunJobBody(Action body)
+        {
+            return Task.Run(body);
+        }
         #endregion
 
     }
