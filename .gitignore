@@ -26,6 +26,8 @@ Temp/
 *.log
 tasks.json
 tasks.json.bak*
+tasks.json.tmp
+tasks.json.bak.tmp
 
 ## XHE runtime copies
 Board Events/XHE/

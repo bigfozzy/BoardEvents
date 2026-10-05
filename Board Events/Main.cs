@@ -114,7 +114,7 @@ namespace Board_Events
         {
             // запустим и закроем хуман при старте
             if (Properties.Settings.Default.FirstTimesStartted)
-                 RunAndCloseXHEByStart(true);
+                 RunAndCloseXHEByStart();
 
             // компоненты
             InitializeComponent();
@@ -162,6 +162,10 @@ namespace Board_Events
 
             // указать контролер задачи
             tasksController.SetTaskController(taskController);
+
+            // автосохранение после проверки - здесь, а не в InitComponents,
+            // потому что tasksController создается только тут
+            TaskCheckThread.AutoSaveHandler = tasksController.AutoSaveTasks;
         }
         // инициализируем заадчи
         void InitTasks()
@@ -252,6 +256,7 @@ namespace Board_Events
         {
             // для сообщений
             TaskCheckThread.tbTaskCheck = null;
+            TaskCheckThread.AutoSaveHandler = null;
             VariantCallThread.TbOutCall = null;
             VariantCheckThread.tbVariantCheck = null;
 
@@ -885,13 +890,14 @@ namespace Board_Events
         /// <summary>
         /// запустить эмулятор на порту и закрыть - с ожиданием запуска и таймаутом
         /// </summary>
-        void StartAndStopXHE(int port)
+        /// <returns>true если эмулятор поднялся</returns>
+        bool StartAndStopXHE(int port)
         {
-            string path = Application.StartupPath + "\\XHE\\" + port.ToString() + "\\" + port.ToString() + ".exe";
+            string path = XhePorts.GetPortExe(port);
 
             // экземпляра нет - дальше идти незачем
             if (!File.Exists(path))
-                return;
+                return false;
 
             XHEApp xhe = new XHEApp(path, port);
 
@@ -906,42 +912,65 @@ namespace Board_Events
 
                     // эмулятор не поднялся - идем дальше, приложение не должно висеть
                     if (waited >= xheStartTimeout)
-                        return;
+                        return false;
 
                     // пользователь закрывает приложение
                     if (NeedClose)
-                        return;
+                        return false;
                 }
 
                 // закрыть
-                script.Exit();
+                try
+                {
+                    script.Exit();
+                }
+                catch (Exception)
+                {
+                }
             }
+
+            return true;
         }
 
-        // запустить и закрыть хуман эумлятор при старте (ввод кода активации)
-        void RunAndCloseXHEByStart(bool first)
+        /// <summary>
+        /// подготовить все эмуляторы: запустить и закрыть каждый, чтобы
+        /// прошла первичная активация и создались профили
+        ///
+        /// Список портов берется из XhePorts - раньше ветка подготовки
+        /// была недостижимой, и диапазон проверки вариантов (13000)
+        /// не готовился вообще.
+        /// </summary>
+        void RunAndCloseXHEByStart()
         {
-            // запустить хуман из заданного пути на заданному порту (по номеру потока)
-            if (first)
-            {
-                StartAndStopXHE(11000);
-                return;
-            }
+            List<int> ports = XhePorts.All();
 
-            // порты проверки задач
-            for (int i = 0; i < 10; i++)
+            List<int> missing = new List<int>();
+            foreach (int port in ports)
             {
-                StartAndStopXHE(11000 + i * 10);
+                if (!XhePorts.IsPrepared(port))
+                {
+                    missing.Add(port);
+                    continue;
+                }
+
+                StartAndStopXHE(port);
+
+                // пользователь закрывает приложение
                 if (NeedClose)
                     return;
             }
 
-            // порты заказа звонков
-            for (int i = 0; i < 2; i++)
+            // сообщаем один раз - иначе 13 портов дадут 13 диалогов
+            if (missing.Count > 0)
             {
-                StartAndStopXHE(12000 + i * 10);
-                if (NeedClose)
-                    return;
+                List<string> names = new List<string>();
+                foreach (int port in missing)
+                    names.Add(port.ToString());
+
+                ShowMessage.ShowInfoMessage(
+                    "Не подготовлены эмуляторы для портов :\r\n" + string.Join(", ", names.ToArray())
+                    + "\r\n\r\nОжидались файлы вида XHE\\<порт>\\<порт>.exe рядом с программой."
+                    + "\r\nБез них проверка задач, заказ звонков и проверка вариантов работать не будут.");
             }
         }
 

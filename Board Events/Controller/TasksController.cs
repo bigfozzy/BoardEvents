@@ -9,6 +9,7 @@ using XHE._Helper.Tools.File;
 using Quartz;
 using XHE._Helper.Tools.GUI;
 using System.IO;
+using XHE._Helper.Tools.Log;
 
 namespace Board_Events.Controller
 {
@@ -51,6 +52,16 @@ namespace Board_Events.Controller
         /// указатель на контроллер текущей задачи
         /// </summary>
         TaskController taskController = null;
+
+        /// <summary>
+        /// когда последний раз сохраняли - чтобы не писать файл на каждый чек
+        /// </summary>
+        DateTime lastSaveTime = DateTime.MinValue;
+
+        /// <summary>
+        /// минимальный интервал между автосохранениями (секунд)
+        /// </summary>
+        const int autoSaveMinInterval = 60;
 
         #endregion
 
@@ -233,36 +244,118 @@ namespace Board_Events.Controller
         /// <summary>
         /// сериализация задач
         /// </summary>
-        /// <returns></returns>
+        /// <returns>false если файл не записан</returns>
         public bool SerializeAllTasks()
         {
-            // резервные копии - 3 штуки
+            return SerializeAllTasks(false);
+        }
+
+        /// <summary>
+        /// сериализация задач
+        /// </summary>
+        /// <param name="quiet">true - не показывать диалоги (вызов не из UI-потока)</param>
+        /// <returns>false если файл не записан</returns>
+        bool SerializeAllTasks(bool quiet)
+        {
+            lastSaveTime = DateTime.Now;
+            string main = Application.StartupPath + "\\tasks.json";
+            string bak1 = main + ".bak";
+            string bak2 = main + ".bak2";
+            string bak3 = main + ".bak3";
+
+            // сюда уходит предыдущая версия, дальше она станет bak1
+            string prev = main + ".bak.tmp";
+
+            // сериализуем во временный файл рядом с целевым.
+            // Прямая запись в tasks.json обрезала файл при сбое,
+            // а ротация бэкапов успевала отвести единственную годную копию
+            string tmp = main + ".tmp";
+            if (!tasks.Serialize(tmp))
+            {
+                ShowMessage.ShowWarningMessage("Не удалось записать файл задач. Проверьте доступ к папке программы.", "Предупреждение");
+                return false;
+            }
+
             try
             {
-                if (File.Exists(Application.StartupPath + "\\tasks.json"))
+                if (File.Exists(main))
                 {
-                    string bak1 = Application.StartupPath + "\\tasks.json.bak";
-                    string bak2 = Application.StartupPath + "\\tasks.json.bak2";
-                    string bak3 = Application.StartupPath + "\\tasks.json.bak3";
-
-                    if (File.Exists(bak3))
-                        File.Delete(bak3);
-                    if (File.Exists(bak2))
-                        File.Move(bak2, bak3);
-
-                    if (File.Exists(bak1))
-                        File.Move(bak1, bak2);
-
-                    File.Move(Application.StartupPath + "\\tasks.json", bak1);
+                    // File.Replace подменяет файл и уводит старую версию в bak.tmp -
+                    // одной операцией, окна без tasks.json не появляется
+                    File.Replace(tmp, main, prev, true);
                 }
+                else
+                {
+                    File.Move(tmp, main);
+                    prev = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                // свежие данные лежат во временном файле - терять их нельзя
+                Report("Не удалось сохранить файл задач : " + ex.Message
+                    + "\r\n\r\nДанные оставлены в файле " + tmp, quiet);
+                return false;
+            }
+
+            // сдвигаем цепочку бэкапов на один шаг: bak3 <- bak2 <- bak1 <- prev
+            try
+            {
+                if (File.Exists(bak3))
+                    File.Delete(bak3);
+                if (File.Exists(bak2))
+                    File.Move(bak2, bak3);
+                if (File.Exists(bak1))
+                    File.Move(bak1, bak2);
+
+                // отведённая версия становится первой копией
+                if (prev != null && File.Exists(prev))
+                    File.Move(prev, bak1);
             }
             catch (Exception)
             {
-                // копия не создалась - сообщаем, но продолжаем
-                ShowMessage.ShowWarningMessage("Не удалось создать резервную копию tasks.json", "Предупреждение");
+                // рабочий файл уже записан - сбой ротации бэкапов не критичен
+                Report("Не удалось обновить резервные копии tasks.json", quiet);
             }
-            return tasks.Serialize("tasks.json");
+
+            return true;
         }
+
+        /// <summary>
+        /// показать ошибку пользователю или записать в лог
+        ///
+        /// Диалог из не-UI-потока вешает интерфейс, поэтому для фоновых
+        /// вызовов пишем только в лог
+        /// </summary>
+        void Report(string message, bool quiet)
+        {
+            if (quiet)
+                LogTools.LogEvent(message);
+            else
+                ShowMessage.ShowWarningMessage(message, "Предупреждение");
+        }
+        /// <summary>
+        /// сохранить задачи, если с прошлого раза прошло достаточно времени
+        ///
+        /// Вызывается из рабочих потоков после проверки, поэтому интервал
+        /// ограничивает количество записей при частых проверках. Ошибку
+        /// не показываем - пользователя может быть нет за клавиатурой,
+        /// пишем в лог.
+        /// </summary>
+        public void AutoSaveTasks()
+        {
+            // слишком часто - задачи не менялись так быстро
+            if ((DateTime.Now - lastSaveTime).TotalSeconds < autoSaveMinInterval)
+                return;
+
+            // сохраняем в фоне, чтобы не блокировать поток проверки
+            // и интерфейс на операции с диском
+            System.Threading.ThreadPool.QueueUserWorkItem(_ =>
+            {
+                SerializeAllTasks(true);
+            });
+        }
+
         // заполнить спиок задач
         void FillTasksList()
         {

@@ -531,6 +531,10 @@ namespace Board_Events.Model.Results
             if (onVariantRequestCallCheckProgressLog!=null)
                 onVariantRequestCallCheckProgressLog.Invoke(this, message);
 
+            // эмулятора не было - закрывать нечего
+            if (script == null)
+                return message;
+
             // закроем хуман - он мог не запуститься, и тогда Exit кинет
             try
             {
@@ -552,8 +556,14 @@ namespace Board_Events.Model.Results
         public string RequestCall(int thread)
         {            
             // запустить хуман из заданного пути на заданном порту (по номеру потока)
-            int port = 12000 + thread * 10;
-            string path = Application.StartupPath + "\\XHE\\" + port.ToString() + "\\" + port.ToString() + ".exe";
+            int port = XhePorts.Call(thread);
+            string path = XhePorts.GetPortExe(port);
+
+            // эмулятора нет - не ждем 30 секунд, а сразу говорим почему
+            if (!XhePorts.IsPrepared(port))
+                return EndRequestCall("нет эмулятора для порта " + port.ToString()
+                    + " (ожидался файл " + path + "), звонок не заказан", null);
+
             XHEApp xhe = new XHEApp(path, port);
 
             // XHE задача
@@ -691,6 +701,10 @@ namespace Board_Events.Model.Results
             if (onVarianCheckProgressLog!=null)
                 onVarianCheckProgressLog.Invoke(this, message);
 
+            // эмулятора не было - закрывать нечего
+            if (script == null)
+                return message;
+
             // закроем хуман - он мог не запуститься, и тогда Exit кинет
             try
             {
@@ -712,8 +726,14 @@ namespace Board_Events.Model.Results
         public string Check(int thread,BaseTask task)
         {
             // запустить хуман из заданного пути на заданном порту (по номеру потока)
-            int port = 13000 + thread * 10;
-            string path = Application.StartupPath + "\\XHE\\" + port.ToString() + "\\" + port.ToString() + ".exe";
+            int port = XhePorts.VariantCheck(thread);
+            string path = XhePorts.GetPortExe(port);
+
+            // эмулятора нет - не ждем 30 секунд, а сразу говорим почему
+            if (!XhePorts.IsPrepared(port))
+                return EndCheck("нет эмулятора для порта " + port.ToString()
+                    + " (ожидался файл " + path + "), вариант не проверен", null);
+
             XHEApp xhe = new XHEApp(path, port);
 
             // XHE задача

@@ -429,8 +429,7 @@ namespace Board_Events
         List<TaskVariant> EndCheck(string message, XHEScriptMulti script, List<TaskVariant> res)
         {
             // лог
-            if (onTaskCheckProgressLog!=null)
-                onTaskCheckProgressLog.Invoke(this, message);
+            LogCheck(message);
 
             // закроем хуман - он мог не запуститься, и тогда Exit кинет
             try
@@ -443,6 +442,16 @@ namespace Board_Events
 
             // вернем варианты
             return res;
+        }
+
+        /// <summary>
+        /// записать сообщение в лог проверки задачи
+        /// </summary>
+        /// <param name="message"></param>
+        void LogCheck(string message)
+        {
+            if (onTaskCheckProgressLog != null)
+                onTaskCheckProgressLog.Invoke(this, message);
         }
 
         /// <summary>
@@ -460,8 +469,17 @@ namespace Board_Events
             LastCheckDate= DateTime.Now; // прверяем сейчас
 
             // запустить хуман из заданного пути на заданном порту (по номеру потока)
-            int port = 11000 + thread*10;
-            string path = Application.StartupPath + "\\XHE\\" + port.ToString() + "\\" + port.ToString() + ".exe";
+            int port = Board_Events.Threads.XhePorts.Check(thread);
+            string path = Board_Events.Threads.XhePorts.GetPortExe(port);
+
+            // эмулятора нет - не ждем 30 секунд, а сразу говорим почему
+            if (!Board_Events.Threads.XhePorts.IsPrepared(port))
+            {
+                LogCheck("нет эмулятора для порта " + port.ToString()
+                    + " (ожидался файл " + path + "), проверка не выполнена");
+                return new List<TaskVariant>();
+            }
+
             XHEApp xhe = new XHEApp(path, port);            
 
             // XHE задача

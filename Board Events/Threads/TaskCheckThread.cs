@@ -24,6 +24,14 @@ namespace Board_Events.Model.Tasks
         public static TextBox tbTaskCheck = null;
 
         /// <summary>
+        /// автосохранение задач после проверки
+        ///
+        /// Статика по той же причине, что и tbTaskCheck: задачу выполняет
+        /// Quartz, а TasksController живёт в форме. Ставится в Main.InitControllers.
+        /// </summary>
+        public static Action AutoSaveHandler = null;
+
+        /// <summary>
         /// используемые порты для проверок
         /// </summary>
         static bool[] TaskCheckThreads = new bool[10] { false, false, false, false, false, false, false, false, false, false };
@@ -122,6 +130,16 @@ namespace Board_Events.Model.Tasks
                     int newVariantsCount = 0;
                     if (newVariants != null)
                         newVariantsCount = newVariants.Count;
+
+                    // появились новые варианты - сохраняем их на диск,
+                    // иначе до следующего выхода из программы они не переживут
+                    // аварийный перезапуск
+                    if (newVariantsCount > 0)
+                    {
+                        Action save = AutoSaveHandler;
+                        if (save != null)
+                            save();
+                    }
 
                     // уведомить по емайл
                     if (newVariantsCount > 0)

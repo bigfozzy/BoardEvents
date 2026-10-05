@@ -141,6 +141,7 @@
       <DependentUpon>Main.cs</DependentUpon>
     </Compile>
     <Compile Include="Threads\BaseThreadWithXHE.cs" />
+    <Compile Include="Threads\XhePorts.cs" />
     <Compile Include="Threads\TaskCheckThread.cs" />
     <Compile Include="Model\Variants\TaskVariant.cs" />
     <Compile Include="Model\Tasks\Boards\TaskAutoRiaCom.cs" />
