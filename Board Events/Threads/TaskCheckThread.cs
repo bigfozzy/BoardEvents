@@ -51,7 +51,7 @@ namespace Board_Events.Model.Tasks
         /// <param name="index"></param>
         protected void FreeThread(int index)
         {
-            TaskCheckThreads[index] = false;
+            FreeThreadIndex(TaskCheckThreads, index);
         }
 
         /// <summary>
@@ -102,8 +102,9 @@ namespace Board_Events.Model.Tasks
                 // обновим задачу 
                 UpdateTask(tbTaskCheck);                    
 
-                // проверим
-                if (tbTaskCheck != null && !tbTaskCheck.IsDisposed)
+                // проверку надо выполнить независимо от того, есть ли панель лога -
+                // раньше работа шла только внутри этой проверки, и задача
+                // молча не проверялась, если лог недоступен
                 {
                     // проверим задачу
                     task.onTaskCheckProgressLog += OnTaskCheckProgressLog;
@@ -125,29 +126,19 @@ namespace Board_Events.Model.Tasks
                     // уведомить по емайл
                     if (newVariantsCount > 0)
                     {
-                        // если програмам еще работает
-                        if (tbTaskCheck != null && !tbTaskCheck.IsDisposed)
+                        // уведомление по е-майл
+                        if (Properties.Settings.Default.SendNewvariansEMailAfterTaskCheck)
                         {
-                            // уведомление по е-майл
-                            if (Properties.Settings.Default.SendNewvariansEMailAfterTaskCheck)
-                            {
-                                tbTaskCheck.Invoke(new Action(() =>
-                                {
-                                    if (task.EMailVariantsTo(newVariants, "Новые варианты по задаче " + task.Name, Properties.Settings.Default.EMailTo))
-                                        LogTaskCheck("отправлено уведомление о новых вариантах задачи по почте");
-                                }));
-                            }
+                            if (task.EMailVariantsTo(newVariants, "Новые варианты по задаче " + task.Name, Properties.Settings.Default.EMailTo))
+                                LogTaskCheck("отправлено уведомление о новых вариантах задачи по почте");
+                        }
 
-                            // уведомление по телефону
-                            if (Properties.Settings.Default.RequestCallToNewVariants && task.CheckCount > 1)
-                            {
-                                tbTaskCheck.Invoke(new Action(() =>
-                                {
-                                    int numNewcalls = task.RequestCallByVariants(newVariants, context.Scheduler, true);
-                                    if (numNewcalls > 0)
-                                        LogTaskCheck("обновлена очередь заказа звонков , новых вариантов : " + numNewcalls.ToString());
-                                }));
-                            }
+                        // уведомление по телефону
+                        if (Properties.Settings.Default.RequestCallToNewVariants && task.CheckCount > 1)
+                        {
+                            int numNewcalls = task.RequestCallByVariants(newVariants, context.Scheduler, true);
+                            if (numNewcalls > 0)
+                                LogTaskCheck("обновлена очередь заказа звонков , новых вариантов : " + numNewcalls.ToString());
                         }
                     }
                 }

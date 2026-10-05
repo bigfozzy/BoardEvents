@@ -40,7 +40,7 @@ namespace Board_Events.Threads
         /// <param name="index"></param>
         protected void FreeThread(int index)
         {
-            VariantCheckThreads[index] = false;
+            FreeThreadIndex(VariantCheckThreads, index);
         }
         /// <summary>
         /// обновить задачу
@@ -98,10 +98,9 @@ namespace Board_Events.Threads
                 // обновим задачу 
                 UpdateTask(tbVariantCheck);
 
-                // проверим
-                if (tbVariantCheck != null && !tbVariantCheck.IsDisposed)
+                // проверка не зависит от наличия панели лога
                 {
-                    // закажем звонок
+                    // разберем вариант
                     variant.onVarianCheckProgressLog += OnVariqntCheckLog;
                     try
                     {

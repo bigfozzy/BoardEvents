@@ -31,6 +31,10 @@ namespace Board_Events.Threads
 
         /// <summary>
         /// надо остановить все потоки
+        ///
+        /// Нигде не выставляется. Оставлено как заготовка - если понадобится
+        /// останавливать потоки без закрытия приложения, флаг надо ставить
+        /// здесь, иначе проверка ниже бесполезна.
         /// </summary>
         public static bool needStop = false;
 
@@ -41,8 +45,13 @@ namespace Board_Events.Threads
 
         /// <summary>
         /// лок на многопоточность
+        ///
+        /// Общий для всех трех классов: массивы у них свои, но лок держим
+        /// один - захват дешевый, а пересекающиеся ожидания не мешают друг другу.
+        /// FreeThread тоже обязан брать этот лок, иначе запись и чтение массива
+        /// не будут атомарны по отношению друг к другу.
         /// </summary>
-        private static Object thisLock = new Object();
+        protected static Object thisLock = new Object();
 
         #endregion
 
@@ -115,12 +124,31 @@ namespace Board_Events.Threads
         /// <param name="Message"></param>
         protected void Log(string Message,TextBox tbLog)
         {            
-            if (tbLog!=null && !tbLog.IsDisposed)
-                tbLog.Invoke(new Action(() => 
+            // приведение к нужному потоку делаем только если панель есть и жива.
+            // IsDisposed проверяем еще раз внутри Invoke - между проверкой и
+            // вызовом контрол может быть уничтожен закрытием формы
+            if (tbLog == null || tbLog.IsDisposed)
+                return;
+
+            try
+            {
+                tbLog.Invoke(new Action(() =>
                 {
+                    if (tbLog.IsDisposed)
+                        return;
+
                     // добавим лог
                     tbLog.AppendText(DateTime.Now.ToString() + ": " + Message + "\r\n");
                 }));
+            }
+            catch (ObjectDisposedException)
+            {
+                // форму закрыли, пока писали лог - терять из-за этого задачу незачем
+            }
+            catch (InvalidOperationException)
+            {
+                // у Invoke нет handle (форма еще не создана) - тоже не критично
+            }
         }
 
         /// <summary>
@@ -128,9 +156,46 @@ namespace Board_Events.Threads
         /// </summary>
         protected void UpdateTask(TextBox tbLog)
         {
-            // обновим задачу
-            if (tbLog != null && !tbLog.IsDisposed)
-                tbLog.Invoke(new Action(() => { task.OnTaskUpdated(); }));
+            if (task == null)
+                return;
+
+            // приведение к UI-потоку нужно только когда панель лога есть:
+            // task.OnTaskUpdated() сам ходит по контролам ListView, которые
+            // обязаны трогаться из UI-потока
+            if (tbLog == null || tbLog.IsDisposed)
+                return;
+
+            try
+            {
+                tbLog.Invoke(new Action(() =>
+                {
+                    if (tbLog.IsDisposed)
+                        return;
+
+                    task.OnTaskUpdated();
+                }));
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+
+        /// <summary>
+        /// освободить занятый слот потока
+        /// </summary>
+        /// <param name="threads">массив занятости своего класса</param>
+        /// <param name="index">номер слота</param>
+        protected static void FreeThreadIndex(bool[] threads, int index)
+        {
+            // тот же лок, что и при захвате, иначе запись проскочит мимо чтения
+            lock (thisLock)
+            {
+                if (threads != null && index >= 0 && index < threads.Length)
+                    threads[index] = false;
+            }
         }
 
         /// <summary>

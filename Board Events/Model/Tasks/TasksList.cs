@@ -179,8 +179,11 @@ namespace Board_Events.Model.Tasks
             if (tasks.Count == 0)
                 return false;
 
+            // снимок - список изменится под нами
+            List<BaseTask> snapshot = new List<BaseTask>(tasks);
+
             // удалим вс задачи
-            for (int i = tasks.Count - 1; i >= 0; i--)
+            for (int i = snapshot.Count - 1; i >= 0; i--)
                 DeleteTask(i);
 
             return true;
@@ -196,8 +199,14 @@ namespace Board_Events.Model.Tasks
         /// <returns></returns>
         public bool Serialize(string path)
         {
+            // сериализуем снимки задач: в обход идет сам список Variants,
+            // который в это время может менять рабочий поток проверки
+            List<BaseTask> snapshots = new List<BaseTask>();
+            for (int i = 0; i < tasks.Count; i++)
+                snapshots.Add(tasks[i].GetSnapshot());
+
             // получим содержимое в json
-            string serialized = JsonConvert.SerializeObject(tasks);
+            string serialized = JsonConvert.SerializeObject(snapshots);
 
             // запишем в файл - реальный результат записи, иначе потеряем данные,
             // считая что все прошло
@@ -229,8 +238,21 @@ namespace Board_Events.Model.Tasks
                 tasks.Clear();
 
                 // добавим в список с учетом классов
+                // задачи, которые больше не распознаются (доска сменила адрес),
+                // не создаются вовсе и молча теряются - считаем их и сообщаем
+                int iBefore = tasks.Count;
                 for (int i = 0; i < newList.Count; i++)
                     AddTask(newList[i]);
+                int iLost = newList.Count - (tasks.Count - iBefore);
+
+                if (iLost > 0)
+                {
+                    ShowMessage.ShowWarningMessage(
+                        "Не удалось восстановить задач : " + iLost.ToString()
+                        + ".\r\n\r\nИх адреса больше не соответствуют ни одной известной доске"
+                        + " (olx.ua, rst.ua, autoria.com). Задачи можно исправить вручную.",
+                        "Предупреждение");
+                }
             }
 
             return true;

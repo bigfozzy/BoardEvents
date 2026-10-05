@@ -46,7 +46,7 @@ namespace Board_Events.Threads
         /// <param name="index"></param>
         protected void FreeThread(int index)
         {
-            CallThreads[index] = false;
+            FreeThreadIndex(CallThreads, index);
         }
 
         /// <summary>
@@ -102,8 +102,7 @@ namespace Board_Events.Threads
                 // обновим задачу 
                 UpdateTask(TbOutCall);
 
-                // проверим
-                if (TbOutCall != null && !TbOutCall.IsDisposed)
+                // заказ звонка не зависит от наличия панели лога
                 {
                     // закажем звонок
                     variant.onVariantRequestCallCheckProgressLog += OnVariqntRequestCallLog;

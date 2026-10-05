@@ -667,6 +667,22 @@ public virtual List<TaskVariant> ParseVariants(XHEScriptMulti script)
         }
 
         /// <summary>
+        /// снимок задачи для сериализации
+        ///
+        /// Newtonsoft обходит публичное свойство Variants напрямую, минуя
+        /// лок. Если в этот момент рабочий поток добавляет вариант,
+        /// сериализация падает или пишет битый json - и вместе с ним теряются
+        /// все задачи. Поэтому наружу отдаем копию со снятым под локом списком.
+        /// </summary>
+        /// <returns></returns>
+        public BaseTask GetSnapshot()
+        {
+            BaseTask copy = (BaseTask)MemberwiseClone();
+            copy.Variants = GetVariants();
+            return copy;
+        }
+
+        /// <summary>
         /// получить вариант с заданным индексом
         /// </summary>
         /// <param name="index"></param>
