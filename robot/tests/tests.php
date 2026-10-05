@@ -526,9 +526,46 @@ check('в сводке есть количество принятых', str_cont
 check('в сводке есть счётчик без телефона', str_contains($summary, 'без доступного телефона 1'), true);
 check('сводка без принятых', str_contains(AutoriaListingsSelection::summary($r7), 'Принято 0'), true);
 
-// --- пустой отчёт не должен затирать прошлый файл ------------------------------
-// это проверяется по решению слайса писать файл только при непустом
-// результате; сам счётчик уже выше
+// --- Отчёт накапливается, а не переписывается -------------------------------------
+//
+// Раньше заголовок писался при каждом запуске, а он открывает файл на
+// запись с обрезкой. Второй прогон стирал всё, найденное в первый: для
+// робота с проверкой каждые пять минут это означало файл за последние
+// пять минут вместо списка за день. Проверено на живом запуске до правки.
+
+$accPath = sys_get_temp_dir() . '/board-robot-accum-' . getmypid() . '.csv';
+@unlink($accPath);
+
+$adOne = new AutoriaListingItem('https://auto.ria.com/auto_bmw_x5_1.html', 'BMW X5', 100, 'USD', 1000, 'kiev');
+$adTwo = new AutoriaListingItem('https://auto.ria.com/auto_bmw_x3_2.html', 'BMW X3', 200, 'USD', 2000, 'odessa');
+
+(new AutoriaListingsSink(new CsvSpreadsheetWriter($accPath), $accPath))->write([$adOne, $adTwo]);
+$afterFirst = (string)file_get_contents($accPath);
+
+(new AutoriaListingsSink(new CsvSpreadsheetWriter($accPath), $accPath))
+    ->write([new AutoriaListingItem('https://auto.ria.com/auto_bmw_x1_3.html', 'BMW X1')]);
+
+$afterSecond = (string)file_get_contents($accPath);
+$linesSecond = preg_split('/\r\n|\n/', trim($afterSecond));
+
+check('заголовок в файле один раз', substr_count($afterSecond, 'url;'), 1);
+check('объявления первого запуска уцелели', str_contains($afterSecond, 'auto_bmw_x5_1'), true);
+check('объявления второго запуска уцелели', str_contains($afterSecond, 'auto_bmw_x3_2'), true);
+check('новое объявление второго запуска добавлено', str_contains($afterSecond, 'auto_bmw_x1_3'), true);
+check('строк: заголовок плюс три объявления', count(array_filter($linesSecond)), 4);
+check('первый запуск дал три строки', count(array_filter(preg_split('/\r\n|\n/', trim($afterFirst)))), 3);
+
+// --- метка UTF-8 для Excel --------------------------------------------------------
+//
+// Писатель отдаёт UTF-8 без метки, а Excel такие файлы открывает
+// догадками. Метка дописывается один раз - при создании отчёта.
+
+check('метка UTF-8 появилась', str_starts_with($afterFirst, "\xEF\xBB\xBF"), true);
+check('при добавлении метка не задваивается',
+    substr_count($afterSecond, "\xEF\xBB\xBF"), 1);
+check('кириллица после метки цела', str_contains($afterSecond, 'Киев') || str_contains($afterSecond, 'odessa'), true);
+
+@unlink($accPath);
 
 foreach (glob($selDir . '/*') ?: [] as $f) { @unlink($f); }
 @rmdir($selDir);
@@ -643,7 +680,7 @@ $adTricky = new AutoriaListingItem(
 );
 
 $writer = new CsvSpreadsheetWriter($csvPath);
-$sink = new AutoriaListingsSink($writer);
+$sink = new AutoriaListingsSink($writer, $csvPath);
 $saved = $sink->write([$adFromFixture, $adTricky]);
 
 check('файл создан', file_exists($csvPath), true);
@@ -665,7 +702,7 @@ check('колонок в заголовке', count($headerCells), count($header
 check('колонок в первом объявлении', count($firstCells), count($headersNoPhone));
 check('колонок во втором объявлении', count($trickyCells), count($headersNoPhone));
 
-check('заголовок начинается с url', $headerCells[0], 'url');
+check('заголовок начинается с url', ltrim($headerCells[0], "\xEF\xBB\xBF"), 'url');
 check('заголовок второй колонки', $headerCells[1], 'title');
 
 // в файле без согласия RIA нет ни телефона, ни маски
@@ -695,11 +732,11 @@ check('цвет второго объявления', $cell($trickyCells, 'color
 check('VIN второго объявления', $cell($trickyCells, 'vin'), 'WBAXXX1234');
 check('телефон в файле пуст', $cell($trickyCells, 'phone'), '<нет колонки>');
 
-// кодировка: хелпер пишет UTF-8 без BOM. Excel такие файлы открывает
-// догадками, поэтому по умолчанию результат .xlsx (см. run.php),
-// а этот тест фиксирует фактическое поведение CSV.
+// кодировка: файл теперь с меткой UTF-8, поэтому Excel открывает
+// кириллицу верно без танцев с импортом
 check('кириллица не потерялась', str_contains($csv, 'Кроссовер'), true);
-check('нет BOM', str_starts_with($csv, "\xEF\xBB\xBF"), false);
+check('метка UTF-8 есть', str_starts_with($csv, "\xEF\xBB\xBF"), true);
+check('метка одна', substr_count($csv, "\xEF\xBB\xBF"), 1);
 
 @unlink($csvPath);
 

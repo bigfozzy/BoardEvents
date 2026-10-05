@@ -45,14 +45,20 @@ class AutoriaListingsSink
         'phone_masked',
     ];
 
-    /** Колонка продавца - всегда, имя продажца условиями не запрещено */
+    /** Колонка продавца - всегда, имя продавца условиями не запрещено */
     private const SELLER_COLUMN = 'seller';
+
+    /** Метка порядка байтов UTF-8, без неё Excel ломает кириллицу */
+    private const UTF8_BOM = "\xEF\xBB\xBF";
 
     private SpreadsheetWriter $writer;
 
-    public function __construct(SpreadsheetWriter $writer)
+    private string $filePath;
+
+    public function __construct(SpreadsheetWriter $writer, string $filePath)
     {
         $this->writer = $writer;
+        $this->filePath = $filePath;
     }
 
     /**
@@ -75,7 +81,14 @@ class AutoriaListingsSink
     }
 
     /**
-     * Записать объявления и вернуть путь к файлу результата.
+     * Дописать объявления в отчёт и вернуть путь к файлу.
+     *
+     * ОТЧЁТ НАКАПЛИВАЕТСЯ, а не переписывается. Раньше заголовок писался
+     * при каждом запуске, а он открывает файл на запись с обрезкой, -
+     * и второй прогон стирал всё, что нашли в первый. Для робота,
+     * который следит за доской, это убивало сам смысл: проверки идут
+     * каждые пять минут, и покупатель получал файл с объявлениями за
+     * последние пять минут вместо списка за день.
      *
      * @param AutoriaListingItem[] $items
      * @param bool $withPhones Добавить телефонные колонки
@@ -84,8 +97,13 @@ class AutoriaListingsSink
     public function write(array $items, bool $withPhones = false): string
     {
         $headers = self::headers($withPhones);
+        $isNewFile = !$this->reportExists();
 
-        $this->writer->writeHeader($headers);
+        // Заголовок пишем только при создании файла. При добавлении он
+        // и обрезал бы файл, и повторился бы второй строкой.
+        if ($isNewFile) {
+            $this->writer->writeHeader($headers);
+        }
 
         foreach ($items as $item) {
             $record = $item->toRecord();
@@ -100,6 +118,73 @@ class AutoriaListingsSink
             $this->writer->writeRow($row);
         }
 
-        return $this->writer->save();
+        $saved = $this->writer->save();
+
+        if ($isNewFile) {
+            $this->ensureUtf8Bom();
+        }
+
+        return $saved;
+    }
+
+    /**
+     * Есть ли уже отчёт.
+     *
+     * Файл считается отсутствующим и пустым файлом: после обрыва
+     * записи мог остаться ноль байт, и дописывать в него строки без
+     * заголовка бессмысленно.
+     */
+    private function reportExists(): bool
+    {
+        if (!file_exists($this->filePath)) {
+            return false;
+        }
+
+        return filesize($this->filePath) > 0;
+    }
+
+    /**
+     * Дописать метку порядка байтов, если её нет.
+     *
+     * CSV-писатель отдаёт UTF-8 без метки, а Excel такие файлы открывает
+     * догадками и показывает вместо кириллицы кракозябры. Метку дописываем
+     * сами - через порт это сделать нельзя, а файл к этому моменту уже
+     * записан целиком.
+     *
+     * Только для CSV: в xlsx метка не нужна и только сломала бы файл.
+     */
+    private function ensureUtf8Bom(): void
+    {
+        if (!self::isCsv($this->filePath)) {
+            return;
+        }
+
+        $content = file_get_contents($this->filePath);
+
+        if ($content === false || $content === '' || str_starts_with($content, self::UTF8_BOM)) {
+            return;
+        }
+
+        // файл целиком в память: отчёт маленький, а дописывание в начало
+        // иначе требует переписать содержимое
+        if (file_put_contents($this->filePath, self::UTF8_BOM . $content) === false) {
+            TOOLS::$log->warn(
+                'Не удалось дописать метку UTF-8 в ' . $this->filePath
+                . ' - Excel может показать кириллицу неверно',
+                __METHOD__
+            );
+        }
+    }
+
+    /**
+     * Это CSV, а не xlsx.
+     */
+    private static function isCsv(string $path): bool
+    {
+        return !in_array(
+            strtolower(pathinfo($path, PATHINFO_EXTENSION)),
+            ['xlsx', 'xls'],
+            true
+        );
     }
 }

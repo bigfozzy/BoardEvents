@@ -113,7 +113,7 @@ class AutoriaListingsSlice
             $filePath,
             AutoriaListingsSink::headers($collectPhones)
         );
-        $saved = (new AutoriaListingsSink($writer))->write($accepted, $collectPhones);
+        $saved = (new AutoriaListingsSink($writer, $filePath))->write($accepted, $collectPhones);
 
         // состояние сохраняем только после успешной записи результата:
         // наоборот - потеряли бы и файл, и память о проверке

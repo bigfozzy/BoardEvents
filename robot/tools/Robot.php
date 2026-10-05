@@ -297,7 +297,7 @@ class Robot
         // файл не задали - делаем имя из названия задачи, чтобы два
         // фильтра не затирали результат друг друга
         if ($filePath === '') {
-            $filePath = $dataFolderPath . '/' . $this->fileNameFor($name) . '.xlsx';
+            $filePath = $dataFolderPath . '/' . $this->fileNameFor($name) . '.csv';
         }
 
         return AutoriaListingsSlice::run(

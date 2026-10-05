@@ -176,10 +176,20 @@ parameters follow.
 
 ## Output format
 
-`$autoriaDataFilePath` in `run.php` decides the format by extension. Default is
-`.xlsx`: the CSV writer emits UTF-8 without a BOM, and Excel guesses at such
-files and shows mojibake for Cyrillic. Use `.csv` if you prefer it, and open
-it through Data → From Text with UTF-8.
+`$autoriaBoards[*]['file']` decides the format by extension, and the report
+**accumulates**: every run appends what it found and never rewrites the
+previous rows. That matters — checks run every few minutes, and a file that
+only holds the last five minutes is no use to anyone.
+
+This is why the default is `.csv`: the CSV writer can append, the xlsx
+writer cannot. Its adapter creates the workbook from scratch on every run,
+so an `.xlsx` result would contain only the last check. Use `.xlsx` if you
+want a per-run snapshot and keep one file per run.
+
+The CSV carries a UTF-8 byte-order mark, written by the sink because the
+vendor writer emits plain UTF-8 — Excel opens such files by guessing and
+shows mojibake for Cyrillic. The mark is added once, when the report is
+created, and is not duplicated on later runs.
 
 Columns are picked by name, not by position, so reordering fields in
 `AutoriaListingItem` cannot shift data into the wrong column.
