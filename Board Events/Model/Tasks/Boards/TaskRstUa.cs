@@ -119,13 +119,15 @@ namespace Board_Events.Model.Tasks
             }
 
             // обрежем лишнее
-            variant.Phone = variant.Phone.Replace("&nbsp;", "");
+            variant.Phone = variant.Phone.Replace("&nbsp;", "").Trim();
             int index2 = variant.Phone.IndexOf("<");
             if (index2 > 0)
                 variant.Phone = variant.Phone.Substring(0, index2);
 
             // укажем страну
-            if (variant.Phone != "")
+            // пустой телефон тут не пропускаем - он идет дальше и там
+            // отсекается по GetNormedPhone, иначе упало бы на Phone[0]
+            if (variant.Phone.Length > 0)
             {
                 if (variant.Phone[0] == '0')
                     variant.Phone = "+38" + variant.Phone;

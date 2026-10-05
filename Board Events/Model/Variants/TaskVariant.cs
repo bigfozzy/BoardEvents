@@ -495,6 +495,30 @@ namespace Board_Events.Model.Results
             return Main.NeedClose;
         }
         /// <summary>
+        /// дождаться запуска эмулятора
+        /// </summary>
+        /// <returns>false если не запустился или приложение закрывается</returns>
+        static bool WaitXHEStarted(XHEScriptMulti script)
+        {
+            int num = 0;
+            while (script.app.get_version(true) == "")
+            {
+                Thread.Sleep(1000);
+
+                // пользователь закрывает приложение
+                if (Main.NeedClose)
+                    return false;
+
+                // ожидаем не дольше отведенного времени
+                num++;
+                if (num >= BaseTask.xheStartWaitSeconds)
+                    return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// завершение заказ звонка
         /// </summary>
         /// <param name="message"></param>
@@ -503,8 +527,15 @@ namespace Board_Events.Model.Results
             // лог
             if (onVariantRequestCallCheckProgressLog!=null)
                 onVariantRequestCallCheckProgressLog.Invoke(this, message);
-            // закроем хуман
-            script.Exit();
+
+            // закроем хуман - он мог не запуститься, и тогда Exit кинет
+            try
+            {
+                script.Exit();
+            }
+            catch (Exception)
+            {
+            }
 
             // вернем варианты
             return message;
@@ -526,20 +557,8 @@ namespace Board_Events.Model.Results
             using (XHEScriptMulti script = new XHEScriptMulti("localhost:" + xhe.GetPort().ToString()))
             {
                 // ожидаем запуска
-                int num = 0;
-                while (script.app.get_version(true) == "")
-                {
-                    Thread.Sleep(1000);
-
-                    // ожидаем 10 секунд
-                    num++;
-                    if (num > 10)
-                        break;
-
-                    // если надо закрыть
-                    if (IsNeedStopCheck())
-                        return EndRequestCall("прерван", script);
-                }
+                if (!WaitXHEStarted(script))
+                    return EndRequestCall("эмулятор не запустился на порту " + port.ToString(), script);
 
                 // скрыть хуманы если надо
                 script.app.show_tray_icon(false);
@@ -557,34 +576,48 @@ namespace Board_Events.Model.Results
                 // чтоб работало не смотря ни на что
                 try
                 {
+                    // параметры ожидания загрузки страницы
+                    script.browser.set_wait_params(10, 3);
+
                     // перейдем на заданный урл
                     script.browser.navigate(Properties.Settings.Default.CalbackKillerPluginUrl);
-                    Thread.Sleep(1);
+
+                    // страница должна загрузиться, иначе полей на ней еще нет
+                    XHEScriptMulti.sleep(3);
 
                     // введем телефон
                     string phone = GetNormedPhone();
-                    if (phone != "")
-                    {
-                        script.anchor.click_by_inner_text("Закажите звонок", false);
-                        if (script.input.get_x_by_name("cbkPhoneInput") > 0)
-                        {
-                            script.input.set_value_by_name("cbkPhoneInput", phone);
-                            script.btn.click_by_inner_text("Позвоните мне!", false);  
-                        }
-                        else if (script.input.get_x_by_name("cbkPhoneDeferredInput") > 0)
-                        {
-                            script.input.set_value_by_name("cbkPhoneDeferredInput", phone);
-                            script.btn.click_by_inner_text("Жду звонка!", false);  
-                        }
-
-                        // уажем что звонок заказан
-                        Status = "заказан звонок";
-
-                        // результат
-                        return EndRequestCall("заказан звонок на телефон " + phone,script);
-                    }
-                    else
+                    if (phone == "")
                         return EndRequestCall("заказать звонок не получилось: телефон " +Phone+" не поддерживается",script);
+
+                    // нашли ли поле для ввода
+                    bool ordered = false;
+
+                    script.anchor.click_by_inner_text("Закажите звонок", false);
+
+                    if (script.input.get_x_by_name("cbkPhoneInput") > 0)
+                    {
+                        script.input.set_value_by_name("cbkPhoneInput", phone);
+                        script.btn.click_by_inner_text("Позвоните мне!", false);
+                        ordered = true;
+                    }
+                    else if (script.input.get_x_by_name("cbkPhoneDeferredInput") > 0)
+                    {
+                        script.input.set_value_by_name("cbkPhoneDeferredInput", phone);
+                        script.btn.click_by_inner_text("Жду звонка!", false);
+                        ordered = true;
+                    }
+
+                    // поля не нашлись - раньше здесь все равно ставилось
+                    // "заказан звонок", и вариант больше нельзя было обзвонить
+                    if (!ordered)
+                        return EndRequestCall("заказать звонок не получилось: поле ввода телефона не найдено",script);
+
+                    // укажем что звонок заказан
+                    Status = "заказан звонок";
+
+                    // результат
+                    return EndRequestCall("заказан звонок на телефон " + phone,script);
                 }
                 catch (Exception ex)
                 {
@@ -651,8 +684,15 @@ namespace Board_Events.Model.Results
             // лог
             if (onVarianCheckProgressLog!=null)
                 onVarianCheckProgressLog.Invoke(this, message);
-            // закроем хуман
-            script.Exit();
+
+            // закроем хуман - он мог не запуститься, и тогда Exit кинет
+            try
+            {
+                script.Exit();
+            }
+            catch (Exception)
+            {
+            }
 
             // вернем варианты
             return message;
@@ -674,20 +714,8 @@ namespace Board_Events.Model.Results
             using (XHEScriptMulti script = new XHEScriptMulti("localhost:" + xhe.GetPort().ToString()))
             {
                 // ожидаем запуска
-                int num = 0;
-                while (script.app.get_version(true) == "")
-                {
-                    Thread.Sleep(1000);
-
-                    // ожидаем 10 секунд
-                    num++;
-                    if (num > 10)
-                        break;
-
-                    // если надо закрыть
-                    if (IsNeedStopCheck())
-                        return EndCheck("прерван", script);
-                }
+                if (!WaitXHEStarted(script))
+                    return EndCheck("эмулятор не запустился на порту " + port.ToString(), script);
 
                 // скрыть хуманы если надо
                 script.app.show_tray_icon(false);

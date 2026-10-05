@@ -97,11 +97,22 @@ namespace Board_Events.Model.Tasks
 
             // получим данные
             XHEInterface phone=script.div.get_by_attribute("class", "contactitem", false);
-            phone.focus();
-            phone.click();
-            
-            // пауза
-            XHEScriptMulti.sleep(1);
+
+            // блока с контактами может не быть - страница изменилась
+            // или объявление уже снято
+            if (phone.is_exist())
+            {
+                phone.focus();
+                phone.click();
+
+                // пауза
+                XHEScriptMulti.sleep(1);
+            }
+            else
+            {
+                variant.Phone = "";
+                return false;
+            }
 
             // получим телефон
             string phoneStr=phone.get_inner_text();

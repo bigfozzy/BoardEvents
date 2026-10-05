@@ -388,6 +388,35 @@ namespace Board_Events
             return Main.NeedClose;
         }
         /// <summary>
+        /// сколько ждать запуска XHE (секунд)
+        /// </summary>
+        public const int xheStartWaitSeconds = 30;
+
+        /// <summary>
+        /// дождаться запуска эмулятора
+        /// </summary>
+        /// <returns>false если не запустился или приложение закрывается</returns>
+        static bool WaitXHEStarted(XHEScriptMulti script)
+        {
+            int num = 0;
+            while (script.app.get_version(true) == "")
+            {
+                Thread.Sleep(1000);
+
+                // пользователь закрывает приложение
+                if (Main.NeedClose)
+                    return false;
+
+                // ожидаем не дольше отведенного времени
+                num++;
+                if (num >= xheStartWaitSeconds)
+                    return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// завершение задачи
         /// </summary>
         /// <param name="message"></param>
@@ -396,8 +425,15 @@ namespace Board_Events
             // лог
             if (onTaskCheckProgressLog!=null)
                 onTaskCheckProgressLog.Invoke(this, message);
-            // закроем хуман
-            script.Exit();
+
+            // закроем хуман - он мог не запуститься, и тогда Exit кинет
+            try
+            {
+                script.Exit();
+            }
+            catch (Exception)
+            {
+            }
 
             // вернем варианты
             return res;
@@ -426,19 +462,11 @@ namespace Board_Events
             using (XHEScriptMulti script = new XHEScriptMulti("localhost:" + xhe.GetPort().ToString()))
             {
                 // ожидаем запуска
-                int num = 0;
-                while (script.app.get_version(true) == "")
+                if (!WaitXHEStarted(script))
                 {
-                    Thread.Sleep(1000);
-
-                    // ожидаем 10 секунд
-                    num++;
-                    if (num > 10)
-                        break;
-
-                    // если надо закрыть
-                    if (IsNeedStopCheck())
-                        return EndCheck("задача прервана", script, newVariants);
+                    // эмулятор не поднялся - работать с ним бессмысленно,
+                    // раньше код продолжал и получал пустые результаты
+                    return EndCheck("эмулятор не запустился на порту " + port.ToString(), script, new List<TaskVariant>());
                 }
 
                 // скрыть хуманы если надо

@@ -855,6 +855,11 @@ namespace Board_Events
         void StartAndStopXHE(int port)
         {
             string path = Application.StartupPath + "\\XHE\\" + port.ToString() + "\\" + port.ToString() + ".exe";
+
+            // экземпляра нет - дальше идти незачем
+            if (!File.Exists(path))
+                return;
+
             XHEApp xhe = new XHEApp(path, port);
 
             using (XHEScriptMulti script = new XHEScriptMulti("localhost:" + port.ToString()))
