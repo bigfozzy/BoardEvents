@@ -191,6 +191,12 @@ vendor writer emits plain UTF-8 — Excel opens such files by guessing and
 shows mojibake for Cyrillic. The mark is added once, when the report is
 created, and is not duplicated on later runs.
 
+Because the report accumulates, its first two columns are `board` and
+`found_at` — without them you cannot tell this morning's ads from last
+week's, and after changing filters you cannot tell which filter found what.
+The sink stamps both at write time, so they stay correct even if the same
+ad is reached by a different task.
+
 Columns are picked by name, not by position, so reordering fields in
 `AutoriaListingItem` cannot shift data into the wrong column.
 

@@ -216,22 +216,34 @@ $record = $item2->toRecord();
 $headersNoPhone = AutoriaListingsSink::headers(false);
 $headersPhone = AutoriaListingsSink::headers(true);
 
-check('без телефонов колонок пятнадцать', count($headersNoPhone), 15);
-check('с телефонами колонок семнадцать', count($headersPhone), 17);
+check('без телефонов колонок семнадцать', count($headersNoPhone), 17);
+check('с телефонами колонок девятнадцать', count($headersPhone), 19);
 
 // без согласия RIA телефонных колонок в файле нет вообще: пустая
 // колонка «телефон» выглядит как «собирали и не нашли»
 check('колонки телефона нет', in_array('phone', $headersNoPhone, true), false);
 check('колонки маски нет', in_array('phone_masked', $headersNoPhone, true), false);
 
-// с согласием - есть, и стоят перед продавцом
-check('порядок с телефонами', array_slice($headersPhone, 14, 3), ['phone', 'phone_masked', 'seller']);
+// отчёт накапливается, поэтому первые две колонки - кто нашёл и когда.
+// без них в списке нельзя отличить сегодняшнее от позавчерашнего
+check('первая колонка - задача', $headersNoPhone[0], 'board');
+check('вторая колонка - время находки', $headersNoPhone[1], 'found_at');
+
+// с согласием - телефоны стоят перед продавцом
+check('порядок с телефонами', array_slice($headersPhone, 16, 3), ['phone', 'phone_masked', 'seller']);
+check('продавец последний', $headersPhone[18], 'seller');
 
 // каждая колонка файла должна быть и в записи объекта, иначе в строке
-// окажется пустая ячейка вместо данных
+// окажется пустая ячейка вместо данных. board и found_at исключены:
+// их проставляет писатель в момент записи, у объявления таких полей нет
+$runLevelColumns = ['board', 'found_at'];
 foreach ($headersPhone as $header) {
+    if (in_array($header, $runLevelColumns, true)) {
+        continue;
+    }
     check("колонка '$header' есть в записи", array_key_exists($header, $record), true);
 }
+check('у объявления нет полей прогона', array_key_exists('found_at', $record), false);
 
 // значения живого объявления на своих местах
 check('url', $record['url'], 'https://auto.ria.com/auto_bmw_x5_40521845.html');
@@ -702,8 +714,25 @@ check('колонок в заголовке', count($headerCells), count($header
 check('колонок в первом объявлении', count($firstCells), count($headersNoPhone));
 check('колонок во втором объявлении', count($trickyCells), count($headersNoPhone));
 
-check('заголовок начинается с url', ltrim($headerCells[0], "\xEF\xBB\xBF"), 'url');
-check('заголовок второй колонки', $headerCells[1], 'title');
+// значения сверяем по имени заголовка, а не по номеру: так проверка
+// не ломается от перестановки колонок. Раньше тут стояли индексы -
+// и добавление двух колонок их сдвинуло.
+$headerIndex = array_flip(array_map(
+    static fn (string $h): string => ltrim($h, "\xEF\xBB\xBF"),
+    $headerCells
+));
+$cell = static fn (array $cells, string $header): string
+    => (string)($cells[$headerIndex[$header] ?? -1] ?? '<нет колонки>');
+
+check('заголовок начинается с задачи', ltrim($headerCells[0], "\xEF\xBB\xBF"), 'board');
+check('вторая колонка - время находки', $headerCells[1], 'found_at');
+check('третья колонка - адрес', $headerCells[2], 'url');
+check('четвёртая колонка - заголовок', $headerCells[3], 'title');
+
+// отчёт накапливается: в нём должно быть видно, когда и кем найдено
+check('время находки заполнено', preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $cell($firstCells, 'found_at')), 1);
+// в этом прогоне задача не передавалась - колонка есть, но пустая
+check('колонка задачи доступна', $cell($firstCells, 'board'), '');
 
 // в файле без согласия RIA нет ни телефона, ни маски
 check('в файле нет колонки телефона', in_array('phone', $headerCells, true), false);
@@ -716,14 +745,11 @@ check('в файле город', in_array('kiev', $firstCells, true), true);
 
 // значение с точкой с запятой и кавычками должно остаться ОДНИМ полем:
 // если разъехалось - число колонок выше это покажет
-check('заголовок с запятой остался одним полем', $trickyCells[1], 'BMW X3; тест "кавычки" и запятая');
-check('колонка url второго объявления', $trickyCells[0], 'https://auto.ria.com/auto_bmw_x3_40459290.html');
+check('заголовок с запятой остался одним полем', $cell($trickyCells, 'title'), 'BMW X3; тест "кавычки" и запятая');
+check('колонка url второго объявления', $cell($trickyCells, 'url'), 'https://auto.ria.com/auto_bmw_x3_40459290.html');
 
 // значения стоят именно в своих колонках - сверяем по имени заголовка,
 // а не по номеру: так проверка не ломается от перестановки колонок
-$headerIndex = array_flip($headerCells);
-$cell = static fn (array $cells, string $header): string
-    => (string)($cells[$headerIndex[$header] ?? -1] ?? '<нет колонки>');
 
 check('body_type второго объявления', $cell($trickyCells, 'body_type'), 'Кроссовер');
 check('продавец второго объявления', $cell($trickyCells, 'seller'), 'Частное лицо');

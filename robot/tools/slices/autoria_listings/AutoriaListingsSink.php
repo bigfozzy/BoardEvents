@@ -14,6 +14,8 @@ class AutoriaListingsSink
      * @var string[]
      */
     private const COLUMNS = [
+        'board',
+        'found_at',
         'url',
         'title',
         'price',
@@ -55,10 +57,14 @@ class AutoriaListingsSink
 
     private string $filePath;
 
-    public function __construct(SpreadsheetWriter $writer, string $filePath)
+    /** @var string Имя задачи, чтобы было видно, каким фильтром найдено */
+    private string $boardName;
+
+    public function __construct(SpreadsheetWriter $writer, string $filePath, string $boardName = '')
     {
         $this->writer = $writer;
         $this->filePath = $filePath;
+        $this->boardName = $boardName;
     }
 
     /**
@@ -105,8 +111,17 @@ class AutoriaListingsSink
             $this->writer->writeHeader($headers);
         }
 
+        // Отчёт накапливается, поэтому в нём накапливаются объявления
+        // разной свежести. Без отметки времени покупатель не может
+        // понять, что именно нашлось сейчас, а что было вчера, - а это
+        // первое, что он спрашивает, открыв список.
+        $foundAt = date('Y-m-d H:i:s');
+
         foreach ($items as $item) {
             $record = $item->toRecord();
+            $record['found_at'] = $foundAt;
+            $record['board'] = $this->boardName;
+
             $row = [];
 
             // колонки выбираются по именам, поэтому порядок полей в
