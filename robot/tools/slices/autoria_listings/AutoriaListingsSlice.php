@@ -36,6 +36,10 @@ class AutoriaListingsSlice
      *   условия RIA запрещают автоматический сбор номеров (п. 1.21 оферты),
      *   см. AutoriaListingsPhoneReveal
      * @param int $pages Сколько страниц выдачи обойти
+     * @param AutoriaListingsScraper|null $scraper Читалка. По умолчанию
+     *   настоящая; параметр нужен, чтобы прогнать весь конвейер целиком
+     *   без браузера - иначе связка «собрали -> отобрали -> записали»
+     *   остаётся единственным непроверенным куском
      * @return int сколько объявлений попало в файл
      */
     public static function run(
@@ -46,7 +50,8 @@ class AutoriaListingsSlice
         int $limit = 100,
         string $stateDir = '',
         bool $collectPhones = false,
-        int $pages = 1
+        int $pages = 1,
+        ?AutoriaListingsScraper $scraper = null
     ): int {
         if ($stateDir === '') {
             $stateDir = dirname($filePath);
@@ -65,7 +70,7 @@ class AutoriaListingsSlice
             TOOLS::$log->info('Из состояния убрано старых объявлений: ' . $pruned, __METHOD__);
         }
 
-        $scraper = new AutoriaListingsScraper();
+        $scraper = $scraper ?? new AutoriaListingsScraper();
         $candidates = $scraper->harvestList($listUrl, $limit, $pages);
 
         if ($candidates === []) {
