@@ -486,6 +486,11 @@ namespace Board_Events.Controller
         /// <param name="iIndex">индекс задачи</param>
         public void TaskDeleted(BaseTask task, int index)
         {
+            // задача удаляется - снимем ее с расписания, иначе
+            // Quartz продолжит запускать проверку удаленной задачи
+            if (task != null && task.IsScheduling())
+                task.StopScheduling(scheduler);
+
             // индекс за пределами списка - удалять нечего
             if (index < 0 || index >= lwTasks.Items.Count)
                 return;

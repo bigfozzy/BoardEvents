@@ -22,6 +22,7 @@ using Board_Events.Threads;
 using XHE;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Specialized;
 
 namespace Board_Events
 {
@@ -88,10 +89,17 @@ namespace Board_Events
         /// </summary>
         void InitScheduler()
         {
-            // создадим фабрику шедулера
-            schedulerFact = new StdSchedulerFactory();
+// пул Quartz по умолчанию - 10 потоков. Задачи ждут свободный
+            // поток до 10 минут, поэтому при большем числе задач они будут
+            // копиться в очереди. Даем запас под все наши классы потоков
+            // (10 проверок + 2 звонка + 1 проверка варианта) плюс резерв.
+            schedulerFact = new StdSchedulerFactory(new NameValueCollection
+            {
+                { "quartz.threadPool.type", "Quartz.Simpl.DefaultThreadPool, Quartz" },
+                { "quartz.threadPool.maxConcurrency", "20" }
+            });
 
-            // сохдадим и запустим шедулер
+            // создадим и запустим шедулер
             scheduler = schedulerFact.GetScheduler();
             scheduler.Start();
         }
@@ -211,8 +219,21 @@ namespace Board_Events
             Properties.Settings.Default.splitResultsToResultDistance= splitResultsToResult.SplitterDistance;
             Properties.Settings.Default.splitTaskResultsToLogDistance=splitTaskResultsToLog.SplitterDistance;
 
+            // сохраним настройки сразу - FormClosed может не наступить при аварии
+            Properties.Settings.Default.Save();
+
             // надо закрывать потоки
             NeedClose = true;
+
+            // снимаем задачи с расписания - Quartz иначе продолжит
+            // запускать проверки, пока приложение закрывается
+            try
+            {
+                tasksController.StopTaskSheduling();
+            }
+            catch (Exception)
+            {
+            }
         }
         /// <summary>
         /// форма закрылась
@@ -226,13 +247,22 @@ namespace Board_Events
             VariantCallThread.TbOutCall = null;
             VariantCheckThread.tbVariantCheck = null;
 
-            // сохраним задачи
-            tasksController.SerializeAllTasks();
+            // сохраним задачи - если это не удалось, сообщим,
+            // молчаливая потеря всех задач при выходе недопустима
+            if (!tasksController.SerializeAllTasks())
+                ShowMessage.ShowWarningMessage("Задачи не были сохранены. Проверьте доступ к папке программы.", "Предупреждение");
+
             // сохраним настройки
             Properties.Settings.Default.Save();
 
             // завершим шедулер
-            scheduler.Shutdown();
+            try
+            {
+                scheduler.Shutdown();
+            }
+            catch (Exception)
+            {
+            }
 
             // закроем CefSharp - иначе остаются его дочерние процессы
             if (chromeVariant != null)

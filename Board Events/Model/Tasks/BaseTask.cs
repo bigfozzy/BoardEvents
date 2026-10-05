@@ -223,6 +223,12 @@ namespace Board_Events
         /// <returns></returns>
         public bool StartScheduling(IScheduler scheduler,bool isNow=false)
         {
+            // уже в расписании - сначала снимем предыдущую запись,
+            // иначе старый job останется в шедулере навсегда
+            // и задача будет проверяться дважды
+            if (!isNow && IsScheduling())
+                StopScheduling(scheduler);
+
             // им задачи в шедулере
             shedulerTaskCounter++;
             taskJobName= "check task " + Name + shedulerTaskCounter.ToString();
