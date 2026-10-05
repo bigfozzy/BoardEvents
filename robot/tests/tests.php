@@ -379,6 +379,24 @@ check('в run.php задано обход страниц',
 check('страниц по умолчанию больше одной',
     preg_match('/^\$autoriaPages\s*=\s*([2-9]\d*)\s*;/m', $runPhp) === 1, true);
 
+// --- Ожидание карточек перед сбором -----------------------------------------------
+
+// get_all_by_class() элементов не ждёт - он возвращает то, что нашёл на
+// момент вызова. wait_js() ждёт только завершения скриптов, а не
+// появления карточек в DOM. Без явного ожидания список на медленной
+// сети приходил пустым, и робот молча не видел объявлений.
+
+$scraperSrc = file_get_contents(
+    __DIR__ . '/../tools/slices/autoria_listings/AutoriaListingsScraper.php'
+);
+check('перед сбором есть ожидание карточки',
+    str_contains($scraperSrc, "wait_element_exist_by_attribute('class', self::CARD_CLASS"), true);
+check('ожидание идёт до get_all_by_class',
+    strpos($scraperSrc, 'wait_element_exist_by_attribute') <
+    strpos($scraperSrc, 'get_all_by_class(self::CARD_CLASS'), true);
+check('после navigate есть wait_js',
+    str_contains($scraperSrc, 'WEB::$browser->wait_js()'), true);
+
 // --- Сбор телефонов: по умолчанию выключен -----------------------------------------
 //
 // Условия RIA (п. 1.21 оферты) прямо запрещают автоматический сбор

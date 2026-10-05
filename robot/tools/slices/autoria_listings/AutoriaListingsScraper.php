@@ -150,6 +150,13 @@ class AutoriaListingsScraper
         // список подрисовывается скриптом: без паузы выдача пустая
         WEB::$browser->wait_js();
 
+        // wait_js() ждёт завернения скриптов, но не появления карточек в
+        // DOM, а get_all_by_class() элементов не ждёт - он возвращает
+        // что нашёл на момент вызова. На медленной сети или если доска
+        // отдала страницу не полностью, список приходил пустым и робот
+        // молча не видел объявлений. Поэтому ждём карточку явно.
+        DOM::$a->wait_element_exist_by_attribute('class', self::CARD_CLASS, false);
+
         $found = DOM::$a->get_all_by_class(self::CARD_CLASS, false);
         $count = $found->count();
 
