@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Описание задач и их разбор — в самом run.php. Здесь только вызовы.
+ * Добавление новой доски не трогает этот файл.
+ */
 class Robot
 {
     /**
@@ -183,17 +187,11 @@ class Robot
 
         try
         {
-            // Бизнес процесс: слайс закрывает одну ответственность, здесь только вызов.
-            global $autoriaBoardName, $autoriaListUrl, $autoriaDataFilePath,
-                   $autoriaOnlyNew, $autoriaLimit, $dataFolderPath;
+            $total = $this->runBoards();
 
-            AutoriaListingsSlice::run(
-                $autoriaListUrl,
-                $autoriaDataFilePath,
-                $autoriaBoardName,
-                (bool)$autoriaOnlyNew,
-                (int)$autoriaLimit,
-                $dataFolderPath
+            TOOLS::$log->info(
+                "Задач обработано, всего новых объявлений: $total",
+                __METHOD__, true
             );
         }
         catch (Exception $ex)
@@ -229,5 +227,118 @@ class Robot
             TOOLS::$log->info("Результат отправки письма с отчетом: $res", __METHOD__, true);
         }
 
+    }
+
+    /**
+     * Обойти все задачи из настроек.
+     *
+     * Одна плохая задача не должна отменять остальные: у каждой свой
+     * адрес, своё имя и свой файл, поэтому падение одной не значит,
+     * что не отработали остальные. Ошибка пишется в лог и обход идёт
+     * дальше - иначе опечатка в одном адресе тихо отменяла бы сбор
+     * по всем остальным фильтрам.
+     *
+     * @return int всего новых объявлений по всем задачам
+     */
+    private function runBoards(): int
+    {
+        global $autoriaBoards, $autoriaLimit, $dataFolderPath;
+
+        $boards = is_array($autoriaBoards) ? $autoriaBoards : [];
+
+        if ($boards === []) {
+            TOOLS::$log->error(
+                'В run.php не задано ни одной задачи ($autoriaBoards пуст)',
+                __METHOD__, true
+            );
+            return 0;
+        }
+
+        $total = 0;
+
+        foreach ($boards as $index => $board) {
+            $name = trim((string)($board['name'] ?? '')) ?: "задача #$index";
+            $url = trim((string)($board['url'] ?? ''));
+
+            if ($url === '') {
+                TOOLS::$log->error("У задачи '$name' не заполнен url - задача пропущена", __METHOD__, true);
+                continue;
+            }
+
+            try {
+                $total += $this->runBoard($board, $name, $url);
+            }
+            catch (Throwable $e) {
+                TOOLS::$log->error(
+                    "Задача '$name' не отработала: " . $e->getMessage()
+                    . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ')',
+                    __METHOD__, true
+                );
+            }
+        }
+
+        return $total;
+    }
+
+    /**
+     * Отработать одну задачу.
+     *
+     * @return int новых объявлений по этой задаче
+     */
+    private function runBoard(array $board, string $name, string $url): int
+    {
+        global $autoriaLimit, $dataFolderPath;
+
+        $onlyNew = array_key_exists('onlyNew', $board) ? (bool)$board['onlyNew'] : true;
+        $limit = isset($board['limit']) ? (int)$board['limit'] : (int)$autoriaLimit;
+        $filePath = trim((string)($board['file'] ?? ''));
+
+        // файл не задали - делаем имя из названия задачи, чтобы два
+        // фильтра не затирали результат друг друга
+        if ($filePath === '') {
+            $filePath = $dataFolderPath . '/' . $this->fileNameFor($name) . '.xlsx';
+        }
+
+        return AutoriaListingsSlice::run(
+            $url,
+            $filePath,
+            $name,
+            $onlyNew,
+            $limit,
+            $dataFolderPath
+        );
+    }
+
+    /**
+     * Имя файла из названия задачи.
+     *
+     * Название может быть любым - с пробелами, кириллицей и
+     * двоеточиями, а в имя файла такое класть нельзя.
+     *
+     * Кириллица в имени сохраняется намеренно. Пробная транслитерация
+     * давала ужасный результат: «Киев, до 5000» превращалось в
+     * «5000.xlsx», а «Рома» - в «board.xlsx», то есть две разные
+     * задачи писали бы в один файл и затирали друг друга. Windows
+     * кириллицу в именах переносит, а покупателю «Киев_до_5000.xlsx»
+     * понятнее, чем «5000».
+     */
+    private function fileNameFor(string $name): string
+    {
+        // в Windows нельзя: < > : " / \ | ? * и управляющие символы
+        $clean = preg_replace('/[<>:"|?*\x00-\x1F]/u', '_', $name) ?? $name;
+        $clean = preg_replace('/\s+/u', '_', $clean) ?? $clean;
+
+        // оставляем буквы любого алфавита, цифры, дефис и подчёркивание
+        $slug = preg_replace('/[^\p{L}\p{N}_-]+/u', '_', $clean) ?? $clean;
+        $slug = trim((string)$slug, '_');
+        $slug = preg_replace('/_{2,}/', '_', $slug) ?? $slug;
+
+        // Windows не любит имена длиннее 255 символов, а запас нужен
+        // на расширение и на суффикс "- 2" при совпадении имён
+        if (mb_strlen($slug) > 100) {
+            $slug = mb_substr($slug, 0, 100);
+        }
+
+        return $slug !== '' ? $slug : 'board';
     }
 }

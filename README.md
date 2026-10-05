@@ -9,11 +9,8 @@ Two things live in this repository:
 
 # robot/ — the product
 
-Watches [auto.ria.com] (olx and rst parsers are stubbed out), opens only the
-ads it has not seen, and writes the result to `data/autoria.xlsx`.
-
-Built on the PHP API of Human Emulator Studio 7.x — `WEB::$browser`,
-`DOM::$anchor`, `TOOLS::$log` and the rest. [API docs].
+Watches [auto.ria.com], opens only the ads it has not seen, collects each
+seller's phone number, and writes one result file per task into `data/`.
 
 ## Requirements
 
@@ -22,13 +19,27 @@ Built on the PHP API of Human Emulator Studio 7.x — `WEB::$browser`,
 
 ## Run it
 
-Open the robot folder as a project in Studio, edit the board URL in `run.php`,
+Open the robot folder as a project in Studio, edit the tasks in `run.php`,
 and start `run.php`. From a shell, `php run.php` does **not** work — the XHE
 calls are HTTP requests to a running Studio, and without one every facade
 fails. See [Hard rules] in `robot/AGENTS.md`.
 
-Edit the search before running: `run.php` holds `$autoriaListUrl`, which is
-where your filters live. Open the board by hand, filter it, copy the URL.
+A task is a URL you copied off the board: open it by hand, filter it (make,
+model, city, price), copy the address. The filters stay in the URL, so the
+robot repeats your choice instead of guessing. Add as many tasks as you like
+— each gets its own result file:
+
+```php
+$autoriaBoards = [
+    ['name' => "auto.ria — BMW", 'url' => "https://auto.ria.com/car/bmw",
+     'file' => __DIR__ . "/data/autoria_bmw.xlsx"],
+    ['name' => "Киев, до 5000 $", 'url' => "https://auto.ria.com/car/used/?"],
+];
+```
+
+A task that fails does not cancel the others — the error lands in the log and
+the run continues. Otherwise one typo in one URL would silently stop
+collection for every other filter.
 
 ## Layout
 
@@ -156,20 +167,28 @@ parameters follow.
 files and shows mojibake instead of Cyrillic. Use `.csv` if you prefer it, and
 open it through Data → From Text with UTF-8.
 
+## Boards that were not built, and why
+
+- **rst.ua is behind Cloudflare Turnstile.** A plain request gets `403`, and a
+  real Chrome — headless or not — lands on "Один момент…" and stays there.
+  That is an anti-bot wall by design, not a parsing problem: getting past it
+  means a captcha-solving service (ongoing cost per ad) or relying on Studio's
+  headed browser passing where headless does not. Untested and unpriced, so
+  there is no parser here.
+- **OLX forbids scraping in its terms.** Do not build a paid product on it.
+
+The robots' own conditions for auto.ria are also unchecked. Read them before
+selling.
+
 ## What is not finished
 
 - The reveal itself is verified through a real browser on 8 live ads, but the
   XHE calls that drive it (`click()`, `get_all_by_class`, the popup wait) have
   not been run inside Studio. The order of actions and the phone extraction are
-  verified; the transport is not.
-- Only auto.ria parses. `BoardRules` knows olx and rst, but no scraper exists
-  yet — one slice per board.
-- OLX forbids scraping in its terms. Do not build a paid product on it.
+  verified; the transport is not. The same applies to the scheduler.
 - Notification is not wired into the slice yet: the vendor mailer
   (`TOOLS::$mailer`) is available and configured in `run.php`, but new ads only
   reach the file.
-- The board's own conditions are unchecked for rst.ua, and unverified for
-  auto.ria. Read them before selling.
 
 # legacy-csharp/ — the archived desktop app
 

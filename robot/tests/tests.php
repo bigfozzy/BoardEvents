@@ -284,6 +284,50 @@ check('пустое окно', BoardRules::findPhoneInText(''), '');
 check('чужой код не берётся', BoardRules::findPhoneInText("Продавець\n+48 601 234 567"), '');
 check('короткий номер не берётся', BoardRules::findPhoneInText("Продавець\n12345"), '');
 
+// --- Имя файла из названия задачи --------------------------------------------------
+
+// Имена разных задач не должны совпадать: два фильтра, пишущие в один
+// файл, тихо затирали бы друг друга. Проверяем на тех названиях, на
+// которых пробная транслитерация всё ломала: кириллица схлопывалась
+// в 'board', и задачи «Киев, до 5000» и «Рома» писали бы в один файл.
+//
+// Robot.php лежит рядом, но обращается к XHE только внутри методов, так
+// что класс грузится целиком; приватный метод дёргаем через reflection.
+require_once __DIR__ . '/../tools/Robot.php';
+
+$robotFile = new ReflectionClass('Robot');
+$fileNameFor = $robotFile->getMethod('fileNameFor');
+$fileNameFor->setAccessible(true);
+$robotInstance = $robotFile->newInstanceWithoutConstructor();
+
+$names = [
+    'auto.ria — BMW',
+    'auto.ria — Audi A4, до 10 000 $',
+    'Киев, до 5000',
+    'Рома',
+    'Київ: Audi/Range Rover',
+    'BMW///X5',
+    '   ',
+];
+
+$fileNames = [];
+foreach ($names as $boardName) {
+    $fileNames[] = $fileNameFor->invoke($robotInstance, $boardName);
+}
+
+check('кириллица не схлопывается', in_array('Рома', $fileNames, true), true);
+check('название с городом читаемо', in_array('Киев_до_5000', $fileNames, true), true);
+check('пустое название даёт запасное имя', in_array('board', $fileNames, true), true);
+
+check('разные названия дают разные файлы', count(array_unique($fileNames)), count($fileNames));
+
+// Windows не терпит эти символы в именах
+foreach ($fileNames as $fileName) {
+    check("в имени '$fileName' нет запрещённых символов",
+        preg_match('/[<>:"|?*\x00-\x1F]/u', $fileName), 0);
+    check("имя '$fileName' не длиннее 100", mb_strlen($fileName) <= 100, true);
+}
+
 // --- Интервалы и планировщик --------------------------------------------------------
 //
 // Здесь повторяется тот класс бага, что стоил C#-версии: строка
