@@ -117,8 +117,43 @@ class Robot
         else
             TOOLS::$log->info("ВНИМАНИЕ! Робот вносит изменения на сайте", __METHOD__, true);
 
+        $this->configureSchedule();
+
         TOOLS::$log->debug("End init", __METHOD__);
 	}
+
+    /**
+     * Завести или обновить задачу в планировщике Studio.
+     *
+     * Идемпотентно: своя задача обновляется, чужие не трогаются.
+     * Выключается одной настройкой $scheduleRegisterOnRun в run.php.
+     *
+     * @return void
+     */
+    private function configureSchedule(): void
+    {
+        global $scheduleRegisterOnRun, $scheduleInterval, $scheduleFirstRunTime, $scriptPath;
+
+        if (!$scheduleRegisterOnRun) {
+            TOOLS::$log->debug('Регистрация в планировщике выключена настройкой', __METHOD__);
+            return;
+        }
+
+        try {
+            $result = RobotSchedule::register((string)$scriptPath, (string)$scheduleInterval, (string)$scheduleFirstRunTime);
+
+            if ($result === '') {
+                TOOLS::$log->debug('Задача в планировщике не изменилась', __METHOD__);
+            } else {
+                TOOLS::$log->info($result, __METHOD__, true);
+            }
+        }
+        catch (Throwable $e) {
+            // Не задача планировщика роняет проверку доски: если он недоступен,
+            // робот всё равно должен один раз пройти по объявлениям.
+            TOOLS::$log->warn('Не удалось обратиться к планировщику Studio: ' . $e->getMessage(), __METHOD__, true);
+        }
+    }
 
     /**
      * Запуск основной

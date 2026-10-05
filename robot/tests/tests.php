@@ -16,7 +16,18 @@ require_once __DIR__ . '/../tools/slices/autoria_listings/BoardRules.php';
 require_once __DIR__ . '/../tools/slices/autoria_listings/AutoriaListingItem.php';
 require_once __DIR__ . '/../tools/slices/autoria_listings/AutoriaListingsScraper.php';
 require_once __DIR__ . '/../tools/slices/autoria_listings/AutoriaListingsVehicleData.php';
+require_once __DIR__ . '/../tools/slices/autoria_listings/AutoriaListingsSink.php';
+require_once __DIR__ . '/../tools/slices/schedule_setup/ScheduleIntervals.php';
 require_once __DIR__ . '/RealPageFixture.php';
+
+// Адаптер записи подключаем напрямую, а не через tools/robotInit.php:
+// тот требует core/Settings.php и core/Tools.php, которые поднимают
+// настройки и обращаются к запущенной Studio. Здесь нужна только
+// запись файла - она от XHE не зависит (фасады в адаптере есть только
+// в ветках ошибок).
+require_once __DIR__ . '/../tools/core/contracts/SpreadsheetWriter.php';
+require_once __DIR__ . '/../tools/core/helpers/CsvHelper.php';
+require_once __DIR__ . '/../tools/core/adapters/CsvSpreadsheetWriter.php';
 
 $GLOBALS['passed'] = 0;
 $GLOBALS['failed'] = [];
@@ -241,6 +252,165 @@ foreach ($expectedHeaders as $header) {
     check("заголовок '$header' есть в писателе",
         str_contains($sink, "'" . $header . "'"), true);
 }
+
+// --- Интервалы и планировщик --------------------------------------------------------
+//
+// Здесь повторяется тот класс бага, что стоил C#-версии: строка
+// интервала разошлась с условием в коде, и интервал молча перестал
+// работать. Соответствие интервал -> тип задачи проверяется тестом,
+// поэтому разойтись ему больше не с чем.
+
+check('минута -> минута', ScheduleIntervals::toMinutes('раз в минуту'), 1);
+check('3 минуты', ScheduleIntervals::toMinutes('раз в 3 минуты'), 3);
+check('5 минут', ScheduleIntervals::toMinutes('раз в 5 минут'), 5);
+check('10 минут', ScheduleIntervals::toMinutes('раз в 10 минут'), 10);
+check('30 минут', ScheduleIntervals::toMinutes('раз в 30 минут'), 30);
+check('час', ScheduleIntervals::toMinutes('раз в час'), 60);
+check('2 часа', ScheduleIntervals::toMinutes('раз в 2 часа'), 120);
+check('10 часов', ScheduleIntervals::toMinutes('раз в 10 часов'), 600);
+check('сутки', ScheduleIntervals::toMinutes('раз в сутки'), 1440);
+check('неделя', ScheduleIntervals::toMinutes('раз в неделю'), 10080);
+
+// ровно та строка, что разошлась с интерфейсом в C#
+// и из-за которой интервал не работал вообще
+check('10 часов без "в" не распознаётся', ScheduleIntervals::toMinutes('раз 10 часов'), -1);
+check('черес полчаса не распознаётся', ScheduleIntervals::toMinutes('через полчаса'), -1);
+check('пустая строка', ScheduleIntervals::toMinutes(''), -1);
+check('null', ScheduleIntervals::toMinutes(null), -1);
+
+// Список из UI прежней версии должен остаться в том же виде,
+// иначе робот перестанет понимать то, что человек уже настроил.
+check('в списке 16 интервалов', count(ScheduleIntervals::PRESETS), 16);
+check('список отсортирован по времени',
+    array_map('ScheduleIntervals::toMinutes', ScheduleIntervals::PRESETS), [1, 3, 5, 10, 15, 20, 30, 60, 120, 180, 240, 300, 600, 720, 1440, 10080]);
+
+// Каждый интервал из списка обязан что-то значить: неизвестная строка
+// не должна молча превращаться в 0 минут.
+foreach (ScheduleIntervals::PRESETS as $preset) {
+    check("интервал '$preset' распознан", ScheduleIntervals::toMinutes($preset) > 0, true);
+}
+
+// Типы задач планировщика - из исходников XHE.
+check('минута', ScheduleIntervals::toSchedulerType('раз в минуту'), ScheduleIntervals::TYPE_EVERY_MINUTE);
+check('5 минут', ScheduleIntervals::toSchedulerType('раз в 5 минут'), ScheduleIntervals::TYPE_EVERY_5_MIN);
+check('10 минут', ScheduleIntervals::toSchedulerType('раз в 10 минут'), ScheduleIntervals::TYPE_EVERY_10_MIN);
+check('полчаса', ScheduleIntervals::toSchedulerType('раз в 30 минут'), ScheduleIntervals::TYPE_HALF_HOUR);
+check('час', ScheduleIntervals::toSchedulerType('раз в час'), ScheduleIntervals::TYPE_HOURLY);
+check('сутки', ScheduleIntervals::toSchedulerType('раз в сутки'), ScheduleIntervals::TYPE_DAILY);
+check('неделя', ScheduleIntervals::toSchedulerType('раз в неделю'), ScheduleIntervals::TYPE_WEEKLY);
+
+// Эти интервалы планировщик не умеет. Подставлять вместо них
+// ближайший молча нельзя - человек получит не то, что просил,
+// поэтому toSchedulerType обязан вернуть 0.
+check('3 минуты не выражаются', ScheduleIntervals::toSchedulerType('раз в 3 минуты'), 0);
+check('15 минут не выражаются', ScheduleIntervals::toSchedulerType('раз в 15 минут'), 0);
+check('2 часа не выражаются', ScheduleIntervals::toSchedulerType('раз в 2 часа'), 0);
+// 6 часов нет в списке вообще: неизвестная строка тоже даёт 0,
+// чтобы вызывающий её отверг, а не поставил задачу наугад
+check('6 часов не в списке', ScheduleIntervals::toMinutes('раз в 6 часов'), -1);
+check('6 часов не выражаются', ScheduleIntervals::toSchedulerType('раз в 6 часов'), 0);
+check('неизвестный интервал', ScheduleIntervals::toSchedulerType('через полчаса'), 0);
+check('null', ScheduleIntervals::toSchedulerType(null), 0);
+check('пустая строка', ScheduleIntervals::toSchedulerType(''), 0);
+
+// Поддерживаемые интервалы не должны ругаться.
+foreach (['раз в минуту', 'раз в 5 минут', 'раз в 10 минут', 'раз в 30 минут',
+          'раз в час', 'раз в сутки', 'раз в неделю'] as $supported) {
+    check("'$supported' описан как поддерживаемый", ScheduleIntervals::describe($supported), '');
+    check("'$supported' не просит замены", ScheduleIntervals::fallback($supported), '');
+}
+
+// Неподдерживаемые обязаны объяснять, а не молчать.
+check('2 часа требуют объяснения',
+    str_contains(ScheduleIntervals::describe('раз в 2 часа'), 'не умеет'), true);
+// замена предлагается меньшая: лучше проверять реже, чем навязывать лишнее
+check('для 2 часов предлагается раз в час', ScheduleIntervals::fallback('раз в 2 часа'), 'раз в час');
+check('для 3 минут предлагается раз в минуту', ScheduleIntervals::fallback('раз в 3 минуты'), 'раз в минуту');
+check('для 15 минут предлагается раз в 10 минут', ScheduleIntervals::fallback('раз в 15 минут'), 'раз в 10 минут');
+check('для 10 часов предлагается раз в час', ScheduleIntervals::fallback('раз в 10 часов'), 'раз в час');
+
+// --- Запись результата в файл -----------------------------------------------------
+
+// До этого момента проверялось только «что парсер вернул», но никогда -
+// «что файл содержит». Файл и есть то, за что платит покупатель, поэтому
+// здесь прогоняется настоящая цепочка: объекты -> писатель -> файл.
+
+$csvPath = sys_get_temp_dir() . '/board-robot-output-test-' . getmypid() . '.csv';
+@unlink($csvPath);
+
+$adFromFixture = AutoriaListingItem::fromVehicleData($data);
+
+// объявление с неприятными данными: разделитель внутри значения,
+// кавычки и кириллица - именно на этом ломаются выгрузки
+$adTricky = new AutoriaListingItem(
+    'https://auto.ria.com/auto_bmw_x3_40459290.html',
+    'BMW X3; тест "кавычки" и запятая',
+    12345,
+    'USD',
+    1000,
+    'odessa',
+    'BMW',
+    'X3',
+    2019,
+    'WBAXXX1234',
+    'Кроссовер',
+    'Синий',
+    'Дизель',
+    'Механика',
+    '(068) XXX XX XX',
+    '',
+    'Частное лицо'
+);
+
+$writer = new CsvSpreadsheetWriter($csvPath);
+$sink = new AutoriaListingsSink($writer);
+$saved = $sink->write([$adFromFixture, $adTricky]);
+
+check('файл создан', file_exists($csvPath), true);
+check('save вернул путь файла', $saved === $csvPath, true);
+
+$csv = file_get_contents($csvPath);
+$lines = preg_split('/\r\n|\n/', trim($csv));
+
+check('строк: заголовок + два объявления', count($lines), 3);
+
+// Разбираем CSV правилом, а не подсчётом символов: разделитель внутри
+// значения в кавычках разделителем не считается, и наивный substr_count
+// даёт лишний. Проверять надо структуру, а не символы.
+$headerCells = str_getcsv($lines[0], ';');
+$firstCells  = str_getcsv($lines[1], ';');
+$trickyCells = str_getcsv($lines[2], ';');
+
+check('колонок в заголовке', count($headerCells), count($expectedHeaders));
+check('колонок в первом объявлении', count($firstCells), count($expectedHeaders));
+check('колонок во втором объявлении', count($trickyCells), count($expectedHeaders));
+
+check('заголовок начинается с url', $headerCells[0], 'url');
+check('заголовок второй колонки', $headerCells[1], 'title');
+
+// первое объявление пришло с живого объявления
+check('в файле VIN', in_array('5UX33EU06R9T12665', $firstCells, true), true);
+check('в файле цена', in_array('97900', $firstCells, true), true);
+check('в файле город', in_array('kiev', $firstCells, true), true);
+
+// значение с точкой с запятой и кавычками должно остаться ОДНИМ полем:
+// если разъехалось - число колонок выше это покажет
+check('заголовок с запятой остался одним полем', $trickyCells[1], 'BMW X3; тест "кавычки" и запятая');
+check('колонка url второго объявления', $trickyCells[0], 'https://auto.ria.com/auto_bmw_x3_40459290.html');
+check('кузов второго объявления', $trickyCells[10], 'Кроссовер');
+
+// маска не должна просочиться в колонку phone (индекс 14)
+check('phone пустой', $trickyCells[14], '');
+check('маска в своей колонке', $trickyCells[15], '(068) XXX XX XX');
+check('продавец второго объявления', $trickyCells[16], 'Частное лицо');
+
+// кодировка: хелпер пишет UTF-8 без BOM. Excel такие файлы открывает
+// догадками, поэтому по умолчанию результат .xlsx (см. run.php),
+// а этот тест фиксирует фактическое поведение CSV.
+check('кириллица не потерялась', str_contains($csv, 'Кроссовер'), true);
+check('нет BOM', str_starts_with($csv, "\xEF\xBB\xBF"), false);
+
+@unlink($csvPath);
 
 // --- Итог --------------------------------------------------------------------------
 

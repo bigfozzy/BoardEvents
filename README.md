@@ -10,8 +10,7 @@ Two things live in this repository:
 # robot/ — the product
 
 Watches [auto.ria.com] (olx and rst parsers are stubbed out), opens only the
-ads it has not seen, normalizes the phone number, and writes the result to
-`data/autoria.csv`.
+ads it has not seen, and writes the result to `data/autoria.xlsx`.
 
 Built on the PHP API of Human Emulator Studio 7.x — `WEB::$browser`,
 `DOM::$anchor`, `TOOLS::$log` and the rest. [API docs].
@@ -36,22 +35,27 @@ where your filters live. Open the board by hand, filter it, copy the URL.
 ```
 robot/
   run.php                    entry point: config block + TOOLS::$robot->run()
-  tools/Robot.php            configure() -> calls the slice -> report
+  tools/Robot.php            configure() -> schedule -> calls the slice -> report
   tools/slices/autoria_listings/
     AutoriaListingsSlice.php     wires it together: collect, filter, write
     AutoriaListingsScraper.php   reads the pages, knows the locators
     AutoriaListingsSink.php      writes the table, knows only the port
-    AutoriaListingsItem.php      one ad: url, title, price, city, phone, date
+    AutoriaListingItem.php       one ad: price, mileage, VIN, seller, phones
+    AutoriaListingsVehicleData.php  JSON-LD -> fields, no browser involved
     AutoriaListingsState.php     which ads were already reported
     BoardRules.php               pure rules: phone, dates, escaping
+  tools/slices/schedule_setup/
+    RobotSchedule.php        register/update the task in WINDOW::$scheduler
+    ScheduleIntervals.php    interval -> scheduler type, pure and tested
   tools/core/                 vendor helpers, mailer, spreadsheet adapters
   data/                       result files + state
   log/                        run logs
 ```
 
 The split follows the vendor's rules: a scraper does not format rows, a sink
-does not parse HTML, and the slice only wires them. `BoardRules.php` and the
-date parsing hold no browser calls at all, which is why they are testable.
+does not parse HTML, and the slice only wires them. `BoardRules.php`,
+`AutoriaListingsVehicleData.php` and `ScheduleIntervals.php` hold no browser
+calls at all, which is why they are testable.
 
 ## What auto.ria actually serves
 
@@ -86,6 +90,27 @@ So:
 fixes the parser after the next redesign updates the fixture, and the tests fail
 until parsing works again.
 
+## Scheduling
+
+The robot registers itself in the Studio scheduler (`WINDOW::$scheduler`) on
+start. Set `$scheduleInterval` in `run.php` and the task is created — or updated
+if it already exists, so re-running never piles up duplicate tasks and never
+doubles how often the board gets checked.
+
+The interval list is the same one the C# version showed:
+
+```
+раз в минуту, 3 минуты, 5, 10, 15, 20, 30 минут, час,
+2, 3, 4, 5, 10, 12 часов, сутки, неделю
+```
+
+**The Studio scheduler cannot express all of them.** It has fixed intervals —
+every minute, 5 minutes, 10 minutes, half an hour, hourly, daily, weekly — and
+no arbitrary value. So `раз в 2 часа` is *not* created, and the log says so
+instead of silently substituting something else: quietly checking twice as
+often as someone asked is worse than not scheduling at all. For odd intervals,
+use Windows Task Scheduler and set `$scheduleRegisterOnRun = false`.
+
 ## Tests
 
 No CI, all local:
@@ -94,10 +119,11 @@ No CI, all local:
 php robot/tests/tests.php
 ```
 
-131 checks over the rules that decide what gets reported: phone normalization,
-`8` → `7` conversion, date comparison, ad de-duplication, HTML/CSV escaping,
-column order, which links count as ads, and JSON-LD parsing against the real
-markup. No Studio and no browser needed.
+216 checks. Phone normalization, `8` → `7` conversion, date comparison, ad
+de-duplication, HTML/CSV escaping, which links count as ads, JSON-LD parsing
+against real markup, interval-to-scheduler mapping, and a full write of the
+result file through the vendor writer — objects → writer → file, parsed back
+and checked. No Studio and no browser needed.
 
 These checks are not decoration. They are the rules ported from the C# version,
 where they had already caught two real bugs — `GetTypeByUrl(null)` throwing on
@@ -106,18 +132,25 @@ fixture then caught three more: the seller name is stored in two different
 shapes in the payload, and the ad id is not at the end of the URL when query
 parameters follow.
 
+## Output format
+
+`$autoriaDataFilePath` in `run.php` decides the format by extension. Default is
+`.xlsx`: the CSV writer emits UTF-8 without a BOM, and Excel guesses at such
+files and shows mojibake instead of Cyrillic. Use `.csv` if you prefer it, and
+open it through Data → From Text with UTF-8.
+
 ## What is not finished
 
 - The phone cannot be collected automatically. See above — this is the open
   product question, not a parsing oversight.
-- Scheduling is not wired up. One run = one pass over the boards. The Studio
-  scheduler (`WINDOW\scheduler`) or Windows Task Scheduler is the next step.
+- The scheduler registration is unverified against a running Studio; the
+  interval mapping and file writing are covered by tests, the API calls are not.
 - Only auto.ria parses. `BoardRules` knows olx and rst, but no scraper exists
   yet — one slice per board.
 - OLX forbids scraping in its terms. Do not build a paid product on it.
 - Notification is not wired into the slice yet: the vendor mailer
   (`TOOLS::$mailer`) is available and configured in `run.php`, but new ads only
-  reach the CSV.
+  reach the file.
 
 # legacy-csharp/ — the archived desktop app
 
