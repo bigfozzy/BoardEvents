@@ -37,6 +37,17 @@ class Robot
 
 		TOOLS::$log->debug("Start init", __METHOD__);
 
+        // Проверка связи со Studio идёт ДО любых обращений к API. Каждое
+        // такое обращение - это HTTP к запущенной Studio, и без неё каждое
+        // возвращает "PHP not connected to Application" вместе с адресом
+        // команды. Без проверки покупатель видит простыню непонятных
+        // сообщений вместо одного понятного.
+        $studioError = $this->checkStudio();
+        if ($studioError !== '') {
+            TOOLS::$log->error($studioError, __METHOD__, true);
+            throw new RuntimeException($studioError);
+        }
+
         // Получить версию Робота
         $this->robotVersion = TOOLS::$passport->getRobotVersion();
         if ($this->robotVersion)
@@ -125,6 +136,38 @@ class Robot
 
         TOOLS::$log->debug("End init", __METHOD__);
 	}
+
+    /**
+     * Проверить, что Human Emulator Studio отвечает.
+     *
+     * get_port() - самый дешёвый вызов: он ничего не грузит. При
+     * недоступной Studio возвращает пустую строку, а не исключение,
+     * поэтому проверяется именно он.
+     *
+     * Проверка обязана идти до инициализации логинатора: сам логинатор
+     * XHE тоже ходит в Studio и напечатал бы ту же самую ошибку.
+     *
+     * @return string '' если всё в порядке, иначе текст для показа
+     */
+    private function checkStudio(): string
+    {
+        $port = '';
+
+        try {
+            $port = (string)WINDOW::$app->get_port();
+        } catch (Throwable $e) {
+            return 'Human Emulator Studio не отвечает: ' . $e->getMessage();
+        }
+
+        if (trim($port) === '') {
+            return 'Human Emulator Studio не запущена или не отвечает.' . "\n"
+                . 'Откройте Studio, добавьте этот скрипт в проект и запустите оттуда.'
+                . "\nИз консоли то же самое: сначала дождитесь окончания загрузки"
+                . "\n" . 'браузера в Studio, потом запускайте скрипт.';
+        }
+
+        return '';
+    }
 
     /**
      * Завести или обновить задачу в планировщике Studio.

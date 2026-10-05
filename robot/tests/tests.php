@@ -367,6 +367,26 @@ check('пустая строка', RobotSchedule::validateTime(''), '09:00:00');
 check('часов 25 быть не может', RobotSchedule::validateTime('25:00'), '09:00:00');
 check('минут 70 быть не может', RobotSchedule::validateTime('10:70'), '09:00:00');
 
+// --- Проверка связи со Studio --------------------------------------------------------
+//
+// Обращения к XHE - это HTTP к запущенной Studio. Без неё каждый вызов
+// возвращает "PHP not connected to Application" вместе с адресом команды,
+// и покупатель видит простыню вместо одного понятного сообщения. Проверка
+// обязана идти до любого обращения к API, включая логинатор.
+
+$robotSrc = file_get_contents(__DIR__ . '/../tools/Robot.php');
+$checkPos = strpos($robotSrc, '$this->checkStudio()');
+$firstApiPos = strpos($robotSrc, 'TOOLS::$passport->getRobotVersion()');
+$browserPos = strpos($robotSrc, 'WEB::$browser->set_default_download');
+
+check('проверка связи есть', $checkPos !== false, true);
+check('проверка до обращения к паспорту', $checkPos < $firstApiPos, true);
+check('проверка до обращения к браузеру', $checkPos < $browserPos, true);
+check('в сообщении есть подсказка про Studio',
+    str_contains($robotSrc, 'Human Emulator Studio не запущена'), true);
+check('в сообщении есть подсказка про запуск из Studio',
+    str_contains($robotSrc, 'запустите оттуда') || str_contains($robotSrc, 'запустите из неё'), true);
+
 // --- Имя файла из названия задачи --------------------------------------------------
 
 // Имена разных задач не должны совпадать: два фильтра, пишущие в один
