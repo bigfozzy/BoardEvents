@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -45,6 +45,8 @@ namespace Board_Events.Model.Tasks
             string content = script.GetContent(Url, 10, 20);
             // новые вараинты
             List<TaskVariant> newVariants = new List<TaskVariant>();
+            // счетчик адресов, которые не удалось разобрать - попадет в лог
+            int skipped = 0;
 
             // перейдем к блоку объявлений
             string prefix0 = "<a title=\"Поднять вверх при поиске\"";
@@ -86,12 +88,19 @@ namespace Board_Events.Model.Tasks
                     {
                         variant = CreateVariant(result_url);
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        // не молчим: иначе сломанный парсер выглядит
+                        // как «новых объявлений нет»
+                        skipped++;
+                        LogCheck("пропущен адрес " + result_url + " : " + ex.Message);
                     }
                     if (variant != null)
                         newVariants.Add(variant);
                 }
+            if (skipped > 0)
+                LogCheck("пропущено адресов, которые не удалось разобрать : " + skipped.ToString());
+
             }
 
             return newVariants;

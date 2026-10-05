@@ -84,8 +84,20 @@ namespace Board_Events
 
         /// <summary>
         /// число проверок
+        ///
+        /// Инкрементится из рабочих потоков, поэтому через Interlocked -
+        /// иначе при десяти параллельных проверках часть инкрементов теряется
         /// </summary>
-        public int CheckCount { get; set; }
+        int checkCount = 0;
+
+        /// <summary>
+        /// число проверок
+        /// </summary>
+        public int CheckCount
+        {
+            get { return Interlocked.CompareExchange(ref checkCount, 0, 0); }
+            set { Interlocked.Exchange(ref checkCount, value); }
+        }
 
         /// <summary>
         /// дата последней проверки
@@ -105,7 +117,19 @@ namespace Board_Events
         /// <summary>
         /// проверяется ли сейчас задача
         /// </summary>
-        public bool IsCheckNow { get; set; }
+        volatile bool isCheckNow = false;
+
+        /// <summary>
+        /// проверяется ли сейчас задача
+        ///
+        /// Пишется из рабочего потока, читается из UI. volatile нельзя
+        /// повесить на автосвойство, поэтому поле рядом вручную
+        /// </summary>
+        public bool IsCheckNow
+        {
+            get { return isCheckNow; }
+            set { isCheckNow = value; }
+        }
 
         #endregion
 
@@ -448,7 +472,7 @@ namespace Board_Events
         /// записать сообщение в лог проверки задачи
         /// </summary>
         /// <param name="message"></param>
-        void LogCheck(string message)
+        internal void LogCheck(string message)
         {
             if (onTaskCheckProgressLog != null)
                 onTaskCheckProgressLog.Invoke(this, message);
@@ -464,7 +488,7 @@ namespace Board_Events
             List<TaskVariant> newVariants = null;
 
             // еще 1 проверка
-            CheckCount++;
+            Interlocked.Increment(ref checkCount);
             // дата проверки
             LastCheckDate= DateTime.Now; // прверяем сейчас
 
@@ -526,6 +550,12 @@ namespace Board_Events
                         onTaskCheckProgressLog.Invoke(this, message);
 
                     // получим телефоны по результатам
+                    // счетчики для диагностики - по умолчанию отсев вариантов
+                    // по дате выглядит так же, как «новых объявлений нет»
+                    int skippedByDate = 0;
+                    int skippedNoDate = 0;
+                    int skippedDuplicate = 0;
+
                     for (int i= newVariants.Count()-1; i>=0 ; i--)
                     {
                         // обрабатываемы вариант
@@ -558,7 +588,31 @@ namespace Board_Events
 
                         // добавим вариант
                         if (!AddVariant(variant, false, Properties.Settings.Default.AddOnlyNewVariants))
+                        {
+                            // разбираемся почему не добавили - иначе отсев не виден
+                            if (GetVariant(variant.Url) != null)
+                                skippedDuplicate++;
+                            else if (Properties.Settings.Default.AddOnlyNewVariants && variant.PostedDate == DateTime.MinValue)
+                                skippedNoDate++;
+                            else
+                                skippedByDate++;
+
                             newVariants.RemoveAt(i);
+                        }
+                    }
+
+                    // отчет по отсеву
+                    if (skippedByDate + skippedNoDate + skippedDuplicate > 0)
+                    {
+                        LogCheck("не добавлено : старые по дате " + skippedByDate.ToString()
+                            + ", без распознанной даты " + skippedNoDate.ToString()
+                            + ", уже были " + skippedDuplicate.ToString());
+
+                        if (skippedByDate > 0 && Properties.Settings.Default.AddOnlyNewVariants)
+                        {
+                            LogCheck("отсев по дате включен настройкой «Добавлять только новые варианты»."
+                                + " Если нужны и архивные объявления - выключите ее в настройках.");
+                        }
                     }
                 }
                 catch (Exception ex)

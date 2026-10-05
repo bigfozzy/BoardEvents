@@ -93,9 +93,12 @@ namespace Board_Events.Model.Results
         // идентификатор задачи в шедулере
         static UInt64 shedulerVariantCounter = 0;
         // указывает что начат заказ варианта
-        public bool IsRequestCallNow = false;
+        //
+        // volatile - флаг пишется из рабочего потока, читается из UI
+        // при включении кнопки заказа звонка
+        public volatile bool IsRequestCallNow = false;
         // указывает что начата проверка варианта
-        public bool IsCheckNow = false;
+        public volatile bool IsCheckNow = false;
 
         #endregion
 
