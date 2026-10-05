@@ -1119,6 +1119,7 @@
             this.убратьПометкиToolStripMenuItem.Name = "убратьПометкиToolStripMenuItem";
             this.убратьПометкиToolStripMenuItem.Size = new System.Drawing.Size(162, 22);
             this.убратьПометкиToolStripMenuItem.Text = "Убрать пометки";
+            this.убратьПометкиToolStripMenuItem.Click += new System.EventHandler(this.tsCheckVariant_Click);
             // 
             // tpStats
             // 
@@ -1145,6 +1146,7 @@
             this.llbTaskAddress.TabIndex = 9;
             this.llbTaskAddress.TabStop = true;
             this.llbTaskAddress.Text = "linkLabel1";
+            this.llbTaskAddress.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.llbTaskAddress_LinkClicked);
             // 
             // label4
             // 

@@ -376,6 +376,20 @@ namespace Board_Events
         }
 
         /// <summary>
+        /// открыть адрес задачи в браузере
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void llbTaskAddress_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            // задача не выбрана
+            if (taskController.Task == null)
+                return;
+
+            FileTools.ShowFile(taskController.Task.Url);
+        }
+
+        /// <summary>
         /// удалить задачу
         /// </summary>
         /// <param name="sender"></param>
