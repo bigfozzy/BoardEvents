@@ -14,7 +14,7 @@ namespace Board_Events.Model.Tasks
     /// <summary>
     /// задача отслеживания olx.ua
     /// </summary>    
-    class TaskOlxCom : BaseTask
+    class TaskOlxUa : BaseTask
     {
         #region создание
 
@@ -24,7 +24,7 @@ namespace Board_Events.Model.Tasks
         /// <param name="url">урл задачи</param>
         /// <param name="name">имя задачи</param>
         /// <param name="time_check">период проверки вариантов</param>
-        public TaskOlxCom(string url, string name, string time_check, UpdatedTaskEvent onTaskUpdated)
+        public TaskOlxUa(string url, string name, string time_check, UpdatedTaskEvent onTaskUpdated)
             : base(url, name, time_check, onTaskUpdated)
         {
             // тип

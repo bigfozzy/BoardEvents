@@ -33,8 +33,11 @@ namespace Board_Events.Model.Tasks
 
         /// <summary>
         /// используемые порты для проверок
+        ///
+        /// Размер = XhePorts.checkCount, это же значение настройки
+        /// iMaxCheckThreads обрезается по нему
         /// </summary>
-        static bool[] TaskCheckThreads = new bool[10] { false, false, false, false, false, false, false, false, false, false };
+        static bool[] TaskCheckThreads = new bool[XhePorts.checkCount];
 
         #endregion
 

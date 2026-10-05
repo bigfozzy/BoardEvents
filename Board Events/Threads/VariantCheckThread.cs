@@ -13,13 +13,15 @@ namespace Board_Events.Threads
     {
         #region статические данные
 
-        // для сообщений о звонках
+        // для сообщений о проверке варианта
         public static TextBox tbVariantCheck = null;
 
-        // максимальное число потоков
-        static int numThreads = 1;
-        // используемые порты для звонков        
-        static bool[] VariantCheckThreads = new bool[10] { false, false, false, false, false, false, false, false, false, false };
+        // максимальное число потоков проверки вариантов
+        static int numThreads = XhePorts.variantCheckCount;
+
+        // слоты занятости. Размер держим равным numThreads - иначе
+        // GetFreeThreadIndex молча обрезает лимит по длине массива
+        static bool[] VariantCheckThreads = new bool[XhePorts.variantCheckCount];
 
         #endregion
 

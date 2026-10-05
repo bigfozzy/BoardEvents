@@ -30,15 +30,6 @@ namespace Board_Events.Threads
         #region данные потока
 
         /// <summary>
-        /// надо остановить все потоки
-        ///
-        /// Нигде не выставляется. Оставлено как заготовка - если понадобится
-        /// останавливать потоки без закрытия приложения, флаг надо ставить
-        /// здесь, иначе проверка ниже бесполезна.
-        /// </summary>
-        public static bool needStop = false;
-
-        /// <summary>
         /// относительный номер потока (относительно своего класса)
         /// </summary>
         protected int threadNum = -1;
@@ -105,8 +96,8 @@ namespace Board_Events.Threads
                 Main.Sleep(3000);
                 waitedSeconds += 3;
 
-                // надо остановить
-                if (needStop || Main.NeedClose)
+                // пользователь закрывает приложение - освобождаем поток
+                if (Main.NeedClose)
                     return -1;
 
                 // не ждем вечно - иначе задача или вариант потеряют слот навсегда

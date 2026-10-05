@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using XHE._Helper.Tools.Log;
 using System.IO;
 using XHE._Helper.Tools.File;
@@ -72,7 +72,7 @@ namespace Board_Events.Model.Tasks
             if (type== "auto.ria.com" || type == "autoria.com")
                 task = new TaskAutoRiaCom(url,name,time_check, OnTaskUpdated);
             if (type == "olx.ua")
-                task = new TaskOlxCom(url, name, time_check, OnTaskUpdated);
+                task = new TaskOlxUa(url, name, time_check, OnTaskUpdated);
             if (type == "rst.ua")
                 task = new TaskRstUa(url, name, time_check, OnTaskUpdated );
 

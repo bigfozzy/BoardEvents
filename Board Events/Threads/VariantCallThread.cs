@@ -21,11 +21,11 @@ namespace Board_Events.Threads
         /// <summary>
         /// максимальное число потоков
         /// </summary>
-        static int numThreads = 2;
+        static int numThreads = XhePorts.callCount;
         /// <summary>
         /// используемые порты для звонков
         /// </summary>
-        protected static bool[] CallThreads = new bool[2] { false, false };
+        protected static bool[] CallThreads = new bool[XhePorts.callCount];
 
         #endregion
 
