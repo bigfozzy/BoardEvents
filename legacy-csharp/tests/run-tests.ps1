@@ -28,15 +28,16 @@ if (-not $CscPath) {
 if (-not $NuGetRoot) { $NuGetRoot = 'E:\Nuget' }
 
 if (-not $RepoRoot) {
-    # tests\ -> корень репозитория
+    # tests\ -> legacy-csharp\
     $RepoRoot = Split-Path -Parent $PSScriptRoot
 }
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 
-$proj = Join-Path $RepoRoot 'Board Events'
+# Исходники C#-версии лежат прямо в legacy-csharp\ (после переноса из Board Events\)
+$proj = $RepoRoot
 if (-not (Test-Path -LiteralPath (Join-Path $proj 'Main.cs'))) {
-    Write-Host "Не похоже на корень репозитория: $RepoRoot" -ForegroundColor Red
-    Write-Host "Ожидается Board Events\Main.cs"
+    Write-Host "Не найден Main.cs в папке проекта: $proj" -ForegroundColor Red
+    Write-Host "Ожидается legacy-csharp\Main.cs"
     exit 1
 }
 
@@ -46,7 +47,10 @@ if (-not (Test-Path -LiteralPath $CscPath)) {
     exit 1
 }
 
-$out = Join-Path $RepoRoot 'tests-out'
+# Папка сборки - в корне репозитория, чтобы не смешивать с robot\
+$RootDir = Split-Path -Parent $RepoRoot
+
+$out = Join-Path $RootDir 'tests-out'
 if (-not (Test-Path -LiteralPath $out)) {
     New-Item -ItemType Directory -Path $out | Out-Null
 }

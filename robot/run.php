@@ -1,0 +1,169 @@
+<?php
+
+// --- --- --- --- ---
+// Настройки Робота (базовые/внутренние) Начало
+// --- --- --- --- ---
+
+// рабочая директория робота (PHP).
+chdir(__DIR__);
+
+/** Адрес XHE API */
+$xhe_host = getenv("RPABOT_HOST_URL");
+
+// Инициализация для PHP (локальный init.php → Studio Templates/init.php)
+require_once __DIR__ . "/init.php";
+
+/**
+ * Пароль для подключения к API XHE
+ * @comment Если нет пароля у API XHE, то значение это пустая строка.
+ */
+$server_password = "";
+
+/** Кодировка редактора кода */
+$bUTF8Ver = true;
+
+/**
+ * Запуск робота из XHE или другой Интегрированной среды разработки (IDE). Влияет на работы keyboard и других функций
+ * @comment Варианты значений:
+ * true - Запуск робота из XHE;
+ * false - это запуск робота не из XHE
+ */
+$PHP_Use_Trought_Shell = true;
+
+/**
+ * Часовой пояс
+ * @comment Варианты значений:
+ * Europe/Moscow - это часовой пояс г. Москва
+ * Asia/Yekaterinburg - это часовой пояс г. Екатеринбург
+ */
+date_default_timezone_set('Europe/Moscow');
+
+/** Логировать в Панель Отладки (stdout)? Да/Нет */
+$dbg = true;
+
+/** Папка для файлов логирования */
+$logFolderPath = __DIR__ . "/log/";
+
+/**
+ * Путь к файлу для логирования
+ * @comment Если null: не логировать в файл
+ */
+$logFilePath = $logFolderPath . "log_" . date("Y-m-d") . ".log";
+
+/**
+ * Уровень логирования.
+ * Логируются сообщения уровня больше или равно, чем текущее значение.
+ * @comment Варианты значений:
+ * 1 - ОТЛАДКА (debug). Логировать уровни: 1-4;
+ * 2 - ИНФО (info). Логировать уровни: 2-4;
+ * 3 - ПРЕДУПРЕЖДЕНИЕ (warn). Логировать уровни: 3-4;
+ * 4 - ОШИБКА (error). Логировать уровни: только 4.
+ */
+$log_level = 1;
+
+/**
+ * Делать ли автоматическую транслитерацию текста для Панели Отладки? Да/Нет
+ * @comment Полезно для случаев когда в Панели Отладки проблемы с отображением/кодировкой/локализацией.
+ * Для лог-файла эта настройка не учитывается.
+ */
+$debug_panel_translit_text = false;
+
+/**
+ * Тип остановки робота
+ * @comment Варианты значений:
+ * quit - просто остановить робота, не закрывать XHE платформу (обычно, удобно для отладки)
+ * exitapp - остановить робота и выключить XHE платформу
+ * restart_and_quit - остановить робота и перезапустить XHE платформу
+ */
+$appQuitType = "quit";
+
+/** Путь к папке Робота для выполнения рестарта см. TOOLS::$app->quit() */
+$scriptPath = realpath(__FILE__);
+
+/**
+ * JSON файл с данными о Роботе.
+ * Плагин "Паспорт робота" находится в верхнем меню: Плагины->Код->Роботы->Паспорт робота
+ */
+$robotPassportFilePath = __DIR__ . "/passport.json";
+
+/** Путь к папке с результатами работы */
+$resFolderPath = __DIR__ . "/res/";
+
+/** Путь к папке с данными */
+$dataFolderPath = __DIR__ . "/data/";
+
+/** Временная папка для загрузки файлов */
+$tempDownloadFolderPath =  __DIR__ . "/temp/";
+
+/** Путь к файлу настроек */
+$settingsFilePath = __DIR__ . "/settings/settings.json";
+
+/**
+ * Задача, которую собирает робот.
+ * @comment Адрес выдачи: откройте доску руками, отфильтруйте
+ * (марка, модель, город, цена) и скопируйте адрес страницы.
+ * Фильтры остаются в адресе, поэтому робот повторяет ваш выбор.
+ */
+$autoriaBoardName = "auto.ria — BMW";
+$autoriaListUrl = "https://auto.ria.com/ukraine/bmw/?currency=UAH&limit=100";
+
+/**
+ * Куда положить результат.
+ * @comment Расширение задаёт формат: .xlsx — Excel, иначе CSV.
+ */
+$autoriaDataFilePath = __DIR__ . "/data/autoria.csv";
+
+/**
+ * Добавлять только объявления новее даты первого запуска.
+ * @comment true — новое; на объявления без распознанной даты это не влияет,
+ * они всё равно попадут в результат (см. BoardRules::shouldAccept).
+ * false — выгружать всю выдачу целиком при каждом запуске.
+ */
+$autoriaOnlyNew = true;
+
+/**
+ * Сколько объявлений максимум взять за один запуск.
+ */
+$autoriaLimit = 100;
+
+// --- --- --- --- ---
+// Настройки робота (базовые/внутренние): конец
+// --- --- --- --- ---
+
+// --- --- --- --- ---
+// Дополнительные модули для работы робота
+// --- --- --- --- ---
+require_once(__DIR__ . "/tools/robotInit.php");
+
+
+// --- --- --- --- ---
+// Дополнительные преднастройки для робота и XHE платформы
+// --- --- --- --- ---
+
+// Название шаблона настроек, автоматически извлекается из settings.json
+$settingsName = false;
+// Обрабатываем настройки из settings/settings.json
+SETTINGS::$settings->selfConfigure($settingsName, $settingsFilePath);
+
+// Убираем ограничения по памяти для PHP
+ini_set('memory_limit', -1);
+
+// Активируем (true) функционал для common_dom.wait_element_exist_by_*
+$bWaitElementExistBeforeAction = true;
+
+// Отключаем логирование сетевых запросов RPAbot
+WEB::$raw->enable_all_streams(false);
+WEB::$raw->clear_disabled_response_urls_array();
+WEB::$raw->clear_disabled_request_urls_array();
+
+// RPAbot unicode mode
+WINDOW::$app->set_script_as_unicode(true);
+// учитывать регистр символов по-умолчанию
+WINDOW::$app->set_params_object_search(true);
+// показать иконку в трее
+WINDOW::$app->show_tray_icon(true);
+
+// Запуск
+TOOLS::$robot->run();
+
+TOOLS::$app->quit();

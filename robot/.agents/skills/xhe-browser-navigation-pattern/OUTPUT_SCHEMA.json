@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["navigation_patterns", "corrected_code", "validation_results", "confidence_score"],
+  "properties": {
+    "navigation_patterns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["original_code", "corrected_code", "pattern_type"],
+        "properties": {
+          "original_code": {
+            "type": "string",
+            "description": "Оригинальный код навигации"
+          },
+          "corrected_code": {
+            "type": "string", 
+            "description": "Исправленный код с wait_js()"
+          },
+          "pattern_type": {
+            "type": "string",
+            "enum": ["correct", "missing_wait_js", "wrong_order", "excessive_wait"],
+            "description": "Тип паттерна навигации"
+          }
+        }
+      }
+    },
+    "corrected_code": {
+      "type": "string",
+      "description": "Полный исправленный код с правильными паттернами"
+    },
+    "validation_results": {
+      "type": "object",
+      "properties": {
+        "total_navigations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "correct_patterns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "corrected_patterns": {
+          "type": "integer", 
+          "minimum": 0
+        },
+        "validation_passed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "confidence_score": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Уверенность в корректности применения паттернов"
+    }
+  },
+  "additionalProperties": false
+}

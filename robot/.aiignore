@@ -1,0 +1,75 @@
+# data folder
+data
+
+# AI Chat Ignore Patterns
+# Файл с паттернами исключений для сбора контекста AI чата
+# Каждая строка - это паттерн исключения (аналог .gitignore)
+
+# Папки с системными файлами
+.git
+.gitignore
+.idea
+.vs
+.vscode
+.DS_Store
+
+# Папки с зависимостями
+node_modules
+vendor
+packages
+bin
+obj
+
+# Папки с временными файлами
+tmp
+temp
+*.tmp
+
+# Логи и базы данных
+#*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# Файлы сборки
+*.dll
+*.exe
+*.pdb
+*.ilk
+*.exp
+*.lib
+
+# Файлы настроек (опционально)
+*.config
+*.settings
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Файлы документации (если не нужны в контексте)
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+
+# Изображения и медиа (если не нужны в контексте)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.mp3
+
+# Архивы
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+
+# Composer files
+composer.phar
+composer.lock
+/vendor/

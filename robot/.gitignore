@@ -1,0 +1,33 @@
+/data/*.xls*
+/data/*.doc*
+/data/*lock*.xls*
+/data/*lock*.doc*
+
+# состояние слайса: какие объявления уже отправлены.
+# Локальные данные покупателя, в репозитории им не место
+/data/*_state.json
+/data/*_state.json.tmp
+
+/doc/*lock*.xls*
+/doc/*lock*.doc*
+
+# VS 
+.vs
+.idea
+
+# result folder (keep empty dir in template)
+res/*
+!res/.gitkeep
+tests/res/
+
+# log folder (keep empty dir in template)
+log/*
+!log/.gitkeep
+
+##### Composer
+composer.phar
+/vendor/
+
+# Commit your application's lock file https://getcomposer.org/doc/01-basic-usage.md#commit-your-composer-lock-file-to-version-control
+# You may choose to ignore a library lock file http://getcomposer.org/doc/02-libraries.md#lock-file
+composer.lock

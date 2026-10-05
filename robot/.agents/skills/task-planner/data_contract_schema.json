@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["skill_name", "version", "input_requirements", "output_format", "validation_rules"],
+  "properties": {
+    "skill_name": {
+      "type": "string",
+      "pattern": "^task-planner$",
+      "description": "Название скилла"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+-(stable|dev|deprecated|legacy)$",
+      "description": "Версия скилла (semver с статусом)"
+    },
+    "input_requirements": {
+      "type": "object",
+      "properties": {
+        "task_description": {
+          "type": "string",
+          "description": "Описание задачи от пользователя"
+        },
+        "context": {
+          "type": "string",
+          "description": "Дополнительный контекст (опционально)"
+        }
+      },
+      "required": ["task_description"],
+      "additionalProperties": false
+    },
+    "output_format": {
+      "type": "object",
+      "properties": {
+        "markdown_file": {
+          "type": "string",
+          "description": "Путь к созданному Markdown файлу"
+        },
+        "json_schema": {
+          "type": "object",
+          "description": "JSON Schema для валидации (OUTPUT_SCHEMA.json)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "validation_rules": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "confidence_score_must_be_>=_0.8",
+          "markdown_must_be_well_formed",
+          "tasks_must_have_priorities",
+          "acceptance_criteria_must_be_specific"
+        ]
+      },
+      "description": "Правила валидации выходных данных"
+    }
+  },
+  "additionalProperties": false
+}

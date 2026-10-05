@@ -1,0 +1,13 @@
+{
+  "docs-rule.md": false,
+  "dom_use_correspond_class-rule.md": false,
+  "init_code-rule.md": false,
+  "quit-rule.md": false,
+  "server_side-rule.md": false,
+  "task-planning-pipeline.md": false,
+  "use_skill-rule.md": false,
+  "use_xhe_classes_as_static_prop-rule.md": false,
+  "use_xhe_classes_interface-rule.md": false,
+  "use_xhe_classes_interfaces-rule.md": false,
+  "use_xhe_classes_xhe-rule.md": false
+}

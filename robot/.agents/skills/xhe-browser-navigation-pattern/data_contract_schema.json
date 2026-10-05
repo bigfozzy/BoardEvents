@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["skill_name", "version", "input_requirements", "output_format", "validation_rules"],
+  "properties": {
+    "skill_name": {
+      "type": "string",
+      "pattern": "^browser-navigation-pattern$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+-(stable|dev|deprecated|legacy)$"
+    },
+    "input_requirements": {
+      "type": "object",
+      "properties": {
+        "code_analysis": {
+          "type": "boolean",
+          "description": "Требуется ли анализ существующего кода"
+        },
+        "php_code_required": {
+          "type": "boolean",
+          "description": "Требуется ли PHP код на входе"
+        },
+        "xhe_framework": {
+          "type": "boolean",
+          "description": "Работа с XHE фреймворком"
+        }
+      }
+    },
+    "output_format": {
+      "type": "object",
+      "properties": {
+        "markdown_report": {
+          "type": "boolean",
+          "description": "Генерация markdown отчета"
+        },
+        "code_examples": {
+          "type": "boolean",
+          "description": "Включение примеров кода"
+        },
+        "validation_summary": {
+          "type": "boolean",
+          "description": "Сводка валидации"
+        }
+      }
+    },
+    "validation_rules": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "navigate_wait_js_pair",
+          "correct_order",
+          "no_excessive_waits",
+          "xhe_compatibility"
+        ]
+      }
+    }
+  },
+  "additionalProperties": false
+}

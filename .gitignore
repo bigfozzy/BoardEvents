@@ -19,18 +19,27 @@ project.assets.json
 *.idb
 
 ## Runtime data / logs (never commit)
-Tasks/
-Logs/
-Results/
-Temp/
+# Legacy C# app wrote these next to its .exe, i.e. inside legacy-csharp/
+legacy-csharp/Tasks/
+legacy-csharp/Logs/
+legacy-csharp/Results/
+legacy-csharp/Temp/
 *.log
-tasks.json
-tasks.json.bak*
-tasks.json.tmp
-tasks.json.bak.tmp
+legacy-csharp/tasks.json
+legacy-csharp/tasks.json.bak*
+legacy-csharp/tasks.json.tmp
+legacy-csharp/tasks.json.bak.tmp
+
+## Robot: local settings (contain the mail password)
+robot/config.php
+# результат в robot/data/ коммитится - он и есть пример работы;
+# не коммитится только состояние слайса (см. robot/.gitignore)
+robot/data/*_state.json
+robot/data/*_state.json.tmp
 
 ## XHE runtime copies
-Board Events/XHE/
+legacy-csharp/XHE/
+XHE/
 
 ## OS
 Thumbs.db
@@ -39,3 +48,4 @@ desktop.ini
 
 ## Test build output
 tests-out/
+robot/tests-out/
