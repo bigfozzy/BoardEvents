@@ -99,33 +99,39 @@ namespace Board_Events.Model.Tasks
         public override bool ParseVariantPhone(TaskVariant variant, XHEScriptMulti script)
         {
             // получим содержимое
-            script.browser.set_wait_params(5, 1);
+            script.browser.set_wait_params(10, 3);
             script.browser.navigate(variant.Url);
-            // пауза
-            XHEScriptMulti.sleep(1);
 
             // получим данные
-            XHEInterface phone=script.div.get_by_attribute("class", "contactitem", false);
-
-            // блока с контактами может не быть - страница изменилась
+            // Блока с контактами может не быть - страница изменилась
             // или объявление уже снято
-            if (phone.is_exist())
-            {
-                phone.focus();
-                phone.click();
-
-                // пауза
-                XHEScriptMulti.sleep(1);
-            }
-            else
+            if (!script.div.wait_element_exist_by_attribute("class", "contactitem", false, ""))
             {
                 variant.Phone = "";
                 return false;
             }
 
-            // получим телефон
-            string phoneStr=phone.get_inner_text();
-            if (phoneStr != "false")
+            XHEInterface phone = script.div.get_by_attribute("class", "contactitem", false);
+            phone.focus();
+            phone.click();
+
+            // телефон раскрывается после клика - ждем появления цифр,
+            // фиксированная пауза здесь означала пустой результат
+            // на медленной сети
+            string phoneStr = "";
+            for (int attempt = 0; attempt < 10; attempt++)
+            {
+                string candidate = phone.get_inner_text();
+                if (candidate != "false" && HasDigit(candidate))
+                {
+                    phoneStr = candidate;
+                    break;
+                }
+
+                XHEScriptMulti.sleep(1);
+            }
+
+            if (phoneStr != "")
             {
                 phoneStr = phoneStr.Replace("Показать", "");
                 phoneStr = phoneStr.Replace("\r\n\r\n", "\t");
@@ -134,13 +140,9 @@ namespace Board_Events.Model.Tasks
                 // разделителей могло не оказаться - тогда остается исходная строка
                 phoneStr = (phoneStrArr.Length > 0 && phoneStrArr[0] != "") ? phoneStrArr[0] : phoneStr.Trim();
             }
-            else
-                phoneStr = "";
 
             // телефон
             variant.Phone = phoneStr;
-            if (variant.Phone == null)
-                variant.Phone = "";
 
             // получим содержимое
             string variantContent = script.webpage.get_body();
@@ -164,6 +166,23 @@ namespace Board_Events.Model.Tasks
             }
 
             return variant.Phone != "";
+        }
+
+        /// <summary>
+        /// есть ли в строке хоть одна цифра
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        static bool HasDigit(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return false;
+
+            for (int i = 0; i < text.Length; i++)
+                if (Char.IsDigit(text[i]))
+                    return true;
+
+            return false;
         }
 
         #endregion       

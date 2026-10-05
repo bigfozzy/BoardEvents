@@ -598,26 +598,25 @@ namespace Board_Events.Model.Results
                     // перейдем на заданный урл
                     script.browser.navigate(Properties.Settings.Default.CalbackKillerPluginUrl);
 
-                    // страница должна загрузиться, иначе полей на ней еще нет
-                    XHEScriptMulti.sleep(3);
-
                     // введем телефон
                     string phone = GetNormedPhone();
                     if (phone == "")
                         return EndRequestCall("заказать звонок не получилось: телефон " +Phone+" не поддерживается",script);
 
-                    // нашли ли поле для ввода
-                    bool ordered = false;
-
+                    // нашли ли поле для ввода. Раньше здесь был Thread.Sleep(1)
+                    // после navigate - поля на странице еще не было, и клик
+                    // уходил в пустоту
                     script.anchor.click_by_inner_text("Закажите звонок", false);
 
-                    if (script.input.get_x_by_name("cbkPhoneInput") > 0)
+                    bool ordered = false;
+
+                    if (script.input.wait_element_exist_by_name("cbkPhoneInput", "cbkPhoneInput"))
                     {
                         script.input.set_value_by_name("cbkPhoneInput", phone);
                         script.btn.click_by_inner_text("Позвоните мне!", false);
                         ordered = true;
                     }
-                    else if (script.input.get_x_by_name("cbkPhoneDeferredInput") > 0)
+                    else if (script.input.wait_element_exist_by_name("cbkPhoneDeferredInput", "cbkPhoneDeferredInput"))
                     {
                         script.input.set_value_by_name("cbkPhoneDeferredInput", phone);
                         script.btn.click_by_inner_text("Жду звонка!", false);
