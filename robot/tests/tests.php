@@ -387,6 +387,70 @@ check('в сообщении есть подсказка про Studio',
 check('в сообщении есть подсказка про запуск из Studio',
     str_contains($robotSrc, 'запустите оттуда') || str_contains($robotSrc, 'запустите из неё'), true);
 
+// --- Контракт настроек -------------------------------------------------------------
+//
+// Robot.php читает параметры через global. Если кто-то переименует
+// переменную в run.php, PHP не пожалуется - значение просто станет
+// null, и поведение молча выключится. Так уже было с
+// $scheduleRegisterOnRun: без него планировщик просто не настраивался,
+// и никто бы об этом не узнал.
+//
+// Параметр считается заданным, если он есть в run.php, в settings.json
+// (оттуда их подставляет SETTINGS::$settings->selfConfigure) или его
+// создаёт сам XHE в своём init.php.
+
+$robotGlobals = [];
+if (preg_match_all('/global\s+([^\/;]+);/', file_get_contents(__DIR__ . '/../tools/Robot.php'), $gm)) {
+    foreach ($gm[1] as $list) {
+        foreach (explode(',', $list) as $var) {
+            $var = trim($var);
+            if (preg_match('/^\$\w+$/', $var)) {
+                $robotGlobals[$var] = true;
+            }
+        }
+    }
+}
+
+// эти создаёт сам XHE в Templates\init.php, в репозитории их нет
+$xheProvided = ['$browser', '$outlook'];
+
+$runSrc = file_get_contents(__DIR__ . '/../run.php');
+
+// в settings.json вендора стоит метка UTF-8, а из-за неё json_decode
+// возвращает null и молча ничего не разбирает - снимаем метку заранее
+$settingsRaw = file_get_contents(__DIR__ . '/../settings/settings.json');
+$settingsRaw = preg_replace('/^\xEF\xBB\xBF/', '', (string)$settingsRaw);
+$settingsKeys = array_keys((array)json_decode($settingsRaw, true));
+
+$missing = [];
+
+foreach (array_keys($robotGlobals) as $var) {
+    if (in_array($var, $xheProvided, true)) {
+        continue;
+    }
+
+    $inRun = preg_match('/^\s*' . preg_quote($var, '/') . '\s*=/m', $runSrc) === 1;
+    $inSettings = in_array(substr($var, 1), $settingsKeys, true);
+
+    if (!$inRun && !$inSettings) {
+        $missing[] = $var;
+    }
+}
+
+check('все параметры Robot.php откуда-то приходят',
+    $missing, []);
+check('Robot.php вообще читает параметры', count($robotGlobals) > 20, true);
+
+// ключевые для поведения проверяем отдельно, чтобы причина была видна
+foreach ([
+    '$autoriaBoards', '$autoriaLimit', '$autoriaPages', '$collectPhones',
+    '$dataFolderPath', '$scriptPath', '$scheduleRegisterOnRun',
+    '$scheduleInterval', '$scheduleFirstRunTime',
+] as $var) {
+    check("параметр $var объявлен",
+        preg_match('/^\s*' . preg_quote($var, '/') . '\s*=/m', $runSrc) === 1, true);
+}
+
 // --- Имя файла из названия задачи --------------------------------------------------
 
 // Имена разных задач не должны совпадать: два фильтра, пишущие в один
