@@ -82,13 +82,38 @@ class RobotSchedule
     }
 
     /**
+ * Номера задач планировщика при заданном их количестве.
+ *
+ * НУМЕРАЦИЯ С НУЛЯ. Это не догадка: в образцах вендора
+ * Test Samples\Window\XHEScheduler\delete.php написано
+ * «numbering starts from zero», а edit.php берёт задачу с индексом 0.
+ * Значит при N задачах корректные номера - от 0 до N-1.
+ *
+ * Раньше обход шёл от 1, и задача с номером 0 не находилась вовсе:
+ * робот считал, что своей задачи нет, и добавлял новую при каждом
+ * запуске. Через неделю задач было бы десятки, и доска проверялась бы
+ * во столько раз чаще, чем человек просил.
+ *
+ * @param int $count Сколько задач в планировщике
+ * @return int[]
+ */
+    public static function taskIndexes(int $count): array
+    {
+        if ($count <= 0) {
+            return [];
+        }
+
+        return range(0, $count - 1);
+    }
+
+    /**
      * Найти номер своей задачи по пути.
      *
      * @return int номер задачи, либо -1 если её нет
      */
     private static function findTask(string $normalisedPath, int $count): int
     {
-        for ($num = 1; $num <= $count; $num++) {
+        foreach (self::taskIndexes($count) as $num) {
             $path = null;
             $type = null;
             $date = null;
@@ -149,8 +174,15 @@ class RobotSchedule
     {
         $time = trim($time);
 
-        if (preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $time)) {
-            return $time . ':00';
+        // Час принимаем и с одной цифрой: в настройках человек напишет
+        // «9:05», и молча получить 09:00 вместо этого - неприятный
+        // сюрприз. На выходе всегда два знака.
+        if (preg_match('/^(\d{1,2}):([0-5]\d)$/', $time, $m)) {
+            $hour = (int)$m[1];
+
+            if ($hour >= 0 && $hour <= 23) {
+                return sprintf('%02d:%s:00', $hour, $m[2]);
+            }
         }
 
         return '09:00:00';

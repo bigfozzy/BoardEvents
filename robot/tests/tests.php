@@ -20,6 +20,7 @@ require_once __DIR__ . '/../tools/slices/autoria_listings/AutoriaListingsSink.ph
 require_once __DIR__ . '/../tools/slices/autoria_listings/AutoriaListingsState.php';
 require_once __DIR__ . '/../tools/slices/autoria_listings/AutoriaListingsSelection.php';
 require_once __DIR__ . '/../tools/slices/schedule_setup/ScheduleIntervals.php';
+require_once __DIR__ . '/../tools/slices/schedule_setup/RobotSchedule.php';
 require_once __DIR__ . '/RealPageFixture.php';
 
 // Адаптер записи подключаем напрямую, а не через tools/robotInit.php:
@@ -307,6 +308,44 @@ check('пустое окно', BoardRules::findPhoneInText(''), '');
 // чужой код в окне не должен становиться номером для звонка
 check('чужой код не берётся', BoardRules::findPhoneInText("Продавець\n+48 601 234 567"), '');
 check('короткий номер не берётся', BoardRules::findPhoneInText("Продавець\n12345"), '');
+
+// --- Нумерация задач планировщика --------------------------------------------------
+//
+// Номера в планировщике Studio начинаются с НУЛЯ - это прямо написано в
+// образцах вендора (delete.php: «numbering starts from zero», edit.php
+// берёт задачу с индексом 0). Обход с единицы пропускал задачу №0: робот
+// считал бы, что своей задачи нет, и добавлял новую при каждом запуске.
+// Через неделю задач десятки, и доска проверяется во столько раз чаще,
+// сколько было запусков.
+
+check('нет задач - нет номеров', RobotSchedule::taskIndexes(0), []);
+check('отрицательное количество - тоже пусто', RobotSchedule::taskIndexes(-3), []);
+check('одна задача имеет номер 0', RobotSchedule::taskIndexes(1), [0]);
+check('две задачи: 0 и 1', RobotSchedule::taskIndexes(2), [0, 1]);
+check('пять задач: от 0 до 4', RobotSchedule::taskIndexes(5), [0, 1, 2, 3, 4]);
+check('задача №0 попадает в обход', in_array(0, RobotSchedule::taskIndexes(3), true), true);
+check('номера не выходят за количество',
+    in_array(3, RobotSchedule::taskIndexes(3), true), false);
+
+// обход не должен начинаться с единицы - это и была ошибка
+$scheduleSrc = file_get_contents(
+    __DIR__ . '/../tools/slices/schedule_setup/RobotSchedule.php'
+);
+check('в коде нет обхода с единицы', str_contains($scheduleSrc, 'for ($num = 1;'), false);
+
+// --- Проверка времени запуска ------------------------------------------------------
+//
+// add() внутри делает date_parse() и смотрит только факт разбора, а не
+// ошибки в нём: мусор прошёл бы молча и превратился в нули.
+
+check('время 09:00 принимается', RobotSchedule::validateTime('09:00'), '09:00:00');
+check('время 23:59 принимается', RobotSchedule::validateTime('23:59'), '23:59:00');
+check('минуты без ведущих нулей', RobotSchedule::validateTime('9:05'), '09:05:00');
+check('пробелы обрезаются', RobotSchedule::validateTime('  07:30  '), '07:30:00');
+check('мусор заменяется на безопасное значение', RobotSchedule::validateTime('завтра'), '09:00:00');
+check('пустая строка', RobotSchedule::validateTime(''), '09:00:00');
+check('часов 25 быть не может', RobotSchedule::validateTime('25:00'), '09:00:00');
+check('минут 70 быть не может', RobotSchedule::validateTime('10:70'), '09:00:00');
 
 // --- Имя файла из названия задачи --------------------------------------------------
 
