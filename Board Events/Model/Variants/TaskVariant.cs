@@ -1,17 +1,10 @@
 ﻿using Board_Events.Threads;
 using Quartz;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Net.Mail;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using XHE;
 using XHE._Helper.Tools.File;
-using XHE._Helper.Tools.GUI;
 using XHE._Helper.Tools.Web;
 
 namespace Board_Events.Model.Results

@@ -3,7 +3,6 @@ using XHE._Helper.Tools.Log;
 using System.IO;
 using XHE._Helper.Tools.File;
 using Newtonsoft.Json;
-using Board_Events.Model.Results;
 using Quartz;
 using XHE._Helper.Tools.GUI;
 

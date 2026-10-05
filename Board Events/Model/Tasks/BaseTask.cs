@@ -5,10 +5,8 @@ using Board_Events.Model.Tasks;
 using Board_Events.Model.Results;
 using XHE._Helper.Tools.File;
 using XHE;
-using System.Windows.Forms;
 using Quartz;
 using System.Threading;
-using XHE._Helper.Tools.GUI;
 using XHE._Helper.Tools.Log;
 using XHE._Helper.Tools.Web;
 

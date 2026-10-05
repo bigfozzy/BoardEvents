@@ -1,11 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using XHE;
-using System.Xml.Serialization;
-using XHE._Helper.Tools.File;
 using XHE._Helper.Tools.String;
 using Board_Events.Model.Results;
 using XHE.XHE_DOM;

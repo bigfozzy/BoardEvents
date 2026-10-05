@@ -1,12 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Board_Events;
 using System.Windows.Forms;
 using XHE._Helper.Tools.File;
-using CefSharp.WinForms;
 using XHE._Helper.Standart_Forms;
 using Board_Events.Model.Results;
 using XHE._Helper.Tools.GUI;

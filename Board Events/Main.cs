@@ -1,11 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
 using System.IO;
-using System.Text;
 using System.Windows.Forms;
 using Board_Events.Controller;
 using Board_Events.Model.Tasks;
@@ -21,7 +16,6 @@ using XHE._Helper.Tools.GUI;
 using Board_Events.Threads;
 using XHE;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Collections.Specialized;
 
 namespace Board_Events
