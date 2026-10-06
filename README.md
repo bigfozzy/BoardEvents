@@ -317,6 +317,13 @@ normalization and export escaping. Also local, also no CI.
 
 - `XHE.dll` is IE-based and owned by the library vendor.
 - The sending mailbox password sits unencrypted in .NET user settings.
+- The `master` branch carries two Dependabot alerts (1 high, 1 moderate)
+  against CefSharp 120.2.70 — the Chromium sandbox escape
+  GHSA-f87w-3j5w-v58p and the `FolderSchemeHandlerFactory` path boundary
+  GHSA-85jm-cwp2-mvpv. Both live in `legacy-csharp/` only: the robot has
+  no NuGet packages at all. Nothing here ships or runs the affected code.
+  Upgrading CefSharp means upgrading a project that no longer builds, so
+  it is left alone deliberately; see `AGENTS.md`.
 - MSBuild cannot build this project: the `XHE.dll` and `libcurl.NET.dll`
   references use a hardcoded `HintPath` that exists on one machine only.
 
