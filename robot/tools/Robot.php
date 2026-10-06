@@ -209,24 +209,36 @@ class Robot
     public function run(): void
     {
         global $logFilePath, $xhe_host, $robotID, $mode;
-        global $mailFrom, $mailTo;
+        global $mailFrom, $mailTo, $notifyOnStart;
 
         // init
 		$this->configure();
 
         TOOLS::$log->info("[{$xhe_host}] [Робот #{$robotID}] Начал работу." , __METHOD__, true);
 
-        // Послать отчет о старте
         $mailer = TOOLS::$mailer::getMailer();
-        if ($mailer) {
+
+        // Отчёт о старте - только по желанию. В шаблоне вендора он
+        // отправляется при каждом запуске, а робот запускается по
+        // расписанию: при интервале в 5 минут это 288 писем «начал
+        // работу» в сутки плюс столько же «результат работы».
+        // Почта перестаёт читаться, её выключают - и вместе с ней
+        // пропадает всё остальное.
+        if ($mailer && $notifyOnStart) {
             $mailer->setFrom($mailFrom)
                 ->setTo($mailTo)
                 ->setSubject("Bot #$robotID Начал работу $mode")
-                ->setMessage("Начал работу версия: " . $this->robotVersion .". Время отправки письма:" .
-                    (new DateTime('now'))->format("d.m.Y H:i"));
-            $res = $mailer->sendText();
-            TOOLS::$log->info("Результат отправки письма с информацией о старте робота: $res", __METHOD__, true);
+                ->setMessage("Начал работу, версия: " . $this->robotVersion
+                    . ". Время: " . (new DateTime('now'))->format("d.m.Y H:i"));
+
+            TOOLS::$log->info(
+                'Отправлено письмо о старте: ' . $mailer->sendText(),
+                __METHOD__
+            );
         }
+
+        $total = 0;
+        $failed = '';
 
         try
         {
@@ -239,37 +251,44 @@ class Robot
         }
         catch (Exception $ex)
         {
-            TOOLS::$log->error("Запуск завершился критической ошибкой ".  $ex->getMessage(), __METHOD__, true);
+            $failed = $ex->getMessage();
+            TOOLS::$log->error("Запуск завершился критической ошибкой $failed", __METHOD__, true);
         }
         catch (Error $ex)
         {
+            $failed = $ex->getMessage();
             $phpFileLine = $ex->getLine();
             $phpFileName = $ex->getFile();
             if ($phpFileLine != '' && $phpFileName != '')
-                $msg = $ex->getMessage() . ' ' . "File: $phpFileName. Line: $phpFileLine";
+                $msg = $failed . ' ' . "File: $phpFileName. Line: $phpFileLine";
             else
-                $msg = $ex->getMessage();
-            TOOLS::$log->error("Запуск завершился критической ошибкой (сбой) ".  $msg, __METHOD__, true);
-        }
-        finally
-        {
-
+                $msg = $failed;
+            TOOLS::$log->error("Запуск завершился критической ошибкой (сбой) $msg", __METHOD__, true);
         }
 
-        if ($mailer) {
-            $attachments = array();
+        // Отчёт по итогам - только когда есть что сообщить: нашлись новые
+        // объявления или запуск сломался. Молчание в логе и письмо о том
+        // же самом раз в пять минут - это разные вещи, и второе только
+        // мешает.
+        if ($mailer && ($total > 0 || $failed !== '')) {
+            $body = $failed !== ''
+                ? "Робот упал: $failed\nПроверьте лог: " . $logFilePath
+                : "Найдено новых объявлений: $total\n"
+                    . "Подробности в файле задачи и в логе: " . $logFilePath;
 
             $mailer->setFrom($mailFrom)
                 ->setTo($mailTo)
-                ->setSubject("Bot #$robotID результат работы")
-                ->setMessage("Это письмо с результатами работы Робота версия: " . $this->robotVersion . ". Письмо содержит: \n" .
-                    (new DateTime('now'))->format("d.m.Y H:i"))
-                ->setAttachments($attachments);
-            $res = $mailer->sendText();
+                ->setSubject($failed !== ''
+                    ? "Bot #$robotID сбой"
+                    : "Bot #$robotID новые объявления: $total")
+                ->setMessage($body)
+                ->setAttachments(array());
 
-            TOOLS::$log->info("Результат отправки письма с отчетом: $res", __METHOD__, true);
+            TOOLS::$log->info(
+                'Отправлено письмо с итогами: ' . $mailer->sendText(),
+                __METHOD__, true
+            );
         }
-
     }
 
     /**
