@@ -164,11 +164,13 @@ use Windows Task Scheduler and set `$scheduleRegisterOnRun = false`.
 No CI, all local:
 
 ```
-php robot/tests/tests.php
+php robot/tests/tests.php           # rules, no browser
+php robot/tests/pipeline_test.php   # the whole slice, no browser
 ```
 
-279 checks. Phone normalization, `8` → `7` conversion, date comparison, ad
-de-duplication, HTML/CSV escaping, which links count as ads, JSON-LD parsing
+348 checks plus a 19-check end-to-end run of the whole pipeline. Phone
+normalization, `8` → `7` conversion, date comparison, ad de-duplication,
+HTML/CSV escaping, which links count as ads, JSON-LD parsing
 against real markup, what the report accepts and rejects, interval mapping,
 and a full write of the result file through the vendor writer — objects →
 writer → file, parsed back and checked. No Studio and no browser needed.
